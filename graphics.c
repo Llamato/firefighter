@@ -139,7 +139,6 @@ void makeLineHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const
     int16_t y0 = origin.y;
     int16_t x1 = destination.x;
     int16_t y1 = destination.y;
-    
     int16_t dx = abs(x1 - x0);
     int16_t dy = abs(y1 - y0);
     int16_t sx = (x0 < x1) ? 1 : -1;
@@ -147,13 +146,11 @@ void makeLineHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const
     int16_t err = dx - dy;
     int16_t x = x0;
     int16_t y = y0;
-    
     while(1) {
         if (x >= 0 && x < BITMAP_WIDTH && y >= 0 && y < BITMAP_HEIGHT) {
             setHighResBitmapPixel(bitmapPointer, (struct Vector2ui) {x, y});
         }
         if (x == x1 && y == y1) break;
-        
         int16_t e2 = 2 * err;
         if (e2 > -dy) {
             err -= dy;
@@ -167,22 +164,18 @@ void makeLineHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const
 }
 
 void fillCircleHighResBitmapSegment(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const struct Vector2ui circumfrancePoint) {
-    const struct Vector2ui segment1point = {center.x + circumfrancePoint.x, center.y + circumfrancePoint.y};
-    const struct Vector2ui segment2point = {center.x - circumfrancePoint.x, center.y + circumfrancePoint.y};
-    const struct Vector2ui segment3point = {center.x + circumfrancePoint.x, center.y - circumfrancePoint.y};
-    const struct Vector2ui segment4point = {center.x - circumfrancePoint.x, center.y - circumfrancePoint.y};
-    const struct Vector2ui segment5point = {center.x + circumfrancePoint.y, center.y + circumfrancePoint.x};
-    const struct Vector2ui segment6point = {center.x - circumfrancePoint.y, center.y + circumfrancePoint.x};
-    const struct Vector2ui segment7point = {center.x + circumfrancePoint.y, center.y - circumfrancePoint.x};
-    const struct Vector2ui segment8point = {center.x - circumfrancePoint.y, center.y - circumfrancePoint.x};
-    makeLineHighResBitmapBresenham(bitmapPointer, segment1point, segment4point);
-    makeLineHighResBitmapBresenham(bitmapPointer, segment2point, segment5point);
-    makeLineHighResBitmapBresenham(bitmapPointer, segment3point, segment6point);
-    makeLineHighResBitmapBresenham(bitmapPointer, segment4point, segment7point);
-    makeLineHighResBitmapBresenham(bitmapPointer, segment1point, segment8point);
-    /*makeLineHighResBitmapBresenham(bitmapPointer, (struct Vector2ui) );
-    makeLineHighResBitmapBresenham(bitmapPointer, (struct Vector2ui) );
-    makeLineHighResBitmapBresenham(bitmapPointer, (struct Vector2ui) );*/
+    const struct Vector2ui leftTopSidePoint = {center.x - circumfrancePoint.x, center.y - circumfrancePoint.y};
+    const struct Vector2ui rightTopSidePoint = {center.x + circumfrancePoint.x, center.y - circumfrancePoint.y};
+    const struct Vector2ui leftUpperSidePoint = {center.x - circumfrancePoint.y, center.y - circumfrancePoint.x};
+    const struct Vector2ui rightUpperSidetPoint = {center.x + circumfrancePoint.y, center.y - circumfrancePoint.x};
+    const struct Vector2ui leftLowerSidePoint = {center.x - circumfrancePoint.y, center.y + circumfrancePoint.x};
+    const struct Vector2ui rightLowerSidePoint = {center.x + circumfrancePoint.y, center.y + circumfrancePoint.x};
+    const struct Vector2ui leftBottomSidePoint = {center.x - circumfrancePoint.x, center.y + circumfrancePoint.y};
+    const struct Vector2ui rightBottomSidePoint = {center.x + circumfrancePoint.x , center.y + circumfrancePoint.y};
+    makeLineHighResBitmapBresenham(bitmapPointer, leftTopSidePoint, rightTopSidePoint);
+    makeLineHighResBitmapBresenham(bitmapPointer, leftUpperSidePoint, rightUpperSidetPoint);
+    makeLineHighResBitmapBresenham(bitmapPointer, leftLowerSidePoint, rightLowerSidePoint);
+    makeLineHighResBitmapBresenham(bitmapPointer, leftBottomSidePoint, rightBottomSidePoint);
 }
 
 void makeFilledCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const uint8_t radius) {
