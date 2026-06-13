@@ -7,7 +7,7 @@
     #define VIC_BACKGROUND_COLOR 	0xD021
     #define SCREEN_RAM      		0x0400
     #define SCREEN_COLOR_RAM		0xD800
-    #define BITMAP_RAM              0xE000
+    #define BITMAP_RAM              0x2000
     #define SPRITES_ENABLE   		0xD015
     #define SPRITE_0_PTR     		0x07f8
     #define SPRITE_1_PTR     		0x07f9
@@ -38,8 +38,15 @@
 
     //Hardware limitations
     #define BITS_PER_BYTE 8
+    #define BITS_PER_NIBBLE BITS_PER_BYTE / 2
+    #define TEXT_SCREEN_COLUMNS 40
+    #define TEXT_SCREEN_ROWS 25
     #define SCREEN_SIZE 1000
-    #define BITMAP_SIZE 5120
+    #define BYTES_PER_CHAR_BITMAP 8
+    #define BITMAP_WIDTH 320
+    #define BITMAP_HEIGHT 200
+    #define BITMAP_SIZE 8192
+    #define BITMAP_SIZE_BITS 64000
     #define SPRITE_COLUMNS 24
     #define SPRITE_ROWS 21
     #define SPRITE_BYTES_PER_ROW SPRITE_COLUMNS / BITS_PER_BYTE
@@ -67,14 +74,22 @@
     };
 
     struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position);
+    struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
     void positionSprite(const uint8_t spriteNr, const struct Vector2ui posiition);
     void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from);
     void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
-    void mirrorCircleSegment(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const struct Vector2uis circumfrancePoint);
-    void makeCircleSpriteBresenham(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const uint8_t r);
+    void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
+    void mirrorCircleSpriteSegment(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const struct Vector2uis circumfrancePoint);
+    void makeCircleSpriteBresenham(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const uint8_t radius);
     void makeLineSpriteBresenham(volatile unsigned char* bitmapPointer, const struct Vector2uis origin, const struct Vector2uis destination);
+    void mirrorCircleHighResBitmapSegment(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const struct Vector2ui circumfrancePoint);
+    void makeCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const uint8_t radius);
+    void makeLineHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui origin, const struct Vector2ui destination);
+    void fillCircleHighResBitmapSegment(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const struct Vector2ui circumfrancePoint);
+    void makeFilledCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const uint8_t radius);
     void setBorderColor(const uint8_t color);
+    void setBackgroundColor(const uint8_t color);
     void switchToHighResBitmapMode();
-    struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
-    void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct BitmapPosition pixelPosition, const bool state);
+    void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
+    void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
 #endif
