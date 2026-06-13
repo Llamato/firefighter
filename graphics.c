@@ -172,16 +172,30 @@ void fillCircleHighResBitmapSegment(volatile unsigned char* bitmapPointer, const
     const struct Vector2ui rightLowerSidePoint = {center.x + circumfrancePoint.y, center.y + circumfrancePoint.x};
     const struct Vector2ui leftBottomSidePoint = {center.x - circumfrancePoint.x, center.y + circumfrancePoint.y};
     const struct Vector2ui rightBottomSidePoint = {center.x + circumfrancePoint.x , center.y + circumfrancePoint.y};
-    makeLineHighResBitmapBresenham(bitmapPointer, leftTopSidePoint, rightTopSidePoint);
+    /*makeLineHighResBitmapBresenham(bitmapPointer, leftTopSidePoint, rightTopSidePoint);
     makeLineHighResBitmapBresenham(bitmapPointer, leftUpperSidePoint, rightUpperSidetPoint);
     makeLineHighResBitmapBresenham(bitmapPointer, leftLowerSidePoint, rightLowerSidePoint);
-    makeLineHighResBitmapBresenham(bitmapPointer, leftBottomSidePoint, rightBottomSidePoint);
+    makeLineHighResBitmapBresenham(bitmapPointer, leftBottomSidePoint, rightBottomSidePoint);*/
+    for(uint16_t currentPixel = leftTopSidePoint.x; currentPixel < rightTopSidePoint.x; currentPixel++) {
+        setHighResBitmapPixel(bitmapPointer, (struct Vector2ui) {currentPixel, leftTopSidePoint.y});
+    }
+    for(uint16_t currentPixel = leftUpperSidePoint.x; currentPixel < rightUpperSidetPoint.x; currentPixel++) {
+        setHighResBitmapPixel(bitmapPointer, (struct Vector2ui) {currentPixel, leftUpperSidePoint.y});
+    }
+    for(uint16_t currentPixel = leftLowerSidePoint.x; currentPixel < rightLowerSidePoint.x; currentPixel++) {
+        setHighResBitmapPixel(bitmapPointer, (struct Vector2ui) {currentPixel, leftLowerSidePoint.y});
+    }
+    for(uint16_t currentPixel = leftBottomSidePoint.x; currentPixel < rightBottomSidePoint.x; currentPixel++) {
+        setHighResBitmapPixel(bitmapPointer, (struct Vector2ui) {currentPixel, leftBottomSidePoint.y});
+    }
 }
 
 void makeFilledCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const uint8_t radius) {
     struct Vector2ui circumfrancePoint = {0, radius};
     int16_t diameter = 3 - (2 * radius);
-    mirrorCircleHighResBitmapSegment(bitmapPointer, center, circumfrancePoint);
+    for(uint16_t currentPixel = center.x - circumfrancePoint.x; currentPixel < center.x + circumfrancePoint.x; currentPixel++) {
+        setHighResBitmapPixel(bitmapPointer, (struct Vector2ui) {currentPixel, center.y});
+    }
     while(circumfrancePoint.x < circumfrancePoint.y) {
         if(diameter > 0) {
             circumfrancePoint.y--;
