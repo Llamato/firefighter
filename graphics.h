@@ -51,6 +51,10 @@
     #define SPRITE_ROWS 21
     #define SPRITE_BYTES_PER_ROW SPRITE_COLUMNS / BITS_PER_BYTE
     #define SPRITE_SIZE 64
+    #define SPRITE_BITMAP_ADDRESS(SPRITE_BLOCK) (SPRITE_BLOCK * SPRITE_SIZE)
+    #define POINT_SPRITE(SPRITE_NR, BLOCK) *ADDRESS_TO_PTR(SPRITE_##SPRITE_NR##_PTR) = BLOCK;
+    #define SPRITE_EMBED_PARAMS(INDEX) clang::offset(INDEX * SPRITE_SIZE) limit(SPRITE_SIZE)
+    #define TILE_EMBED_PARAMS(INDEX) clang::offset(INDEX * BYTES_PER_CHAR_BITMAP) limit(BYTES_PER_CHAR_BITMAP)
     #define COLOR_BLACK 0
     #define COLOR_WHITE 1
     #define COLOR_RED 2
@@ -74,22 +78,37 @@
     };
 
     struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position);
+    struct Vector2uis rasterPositionToCharGridPosition(const struct Vector2ui rasterPosition);
     struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
-    void positionSprite(const uint8_t spriteNr, const struct Vector2ui posiition);
+    void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary);
+    void setSpriteColor(const uint8_t spriteNr, uint8_t color);
+    void enableSprite(const uint8_t spriteNr);
+    void disableSprite(const uint8_t spriteNr);
+    void enableSpriteMulticolorMode(const uint8_t spriteNr);
+    void disableSpriteMulticolorMode(const uint8_t spriteNr);
+    void enableSpriteDoubleWidth(const uint8_t spriteNr);
+    void disableSpriteDoubleWidth(const uint8_t spriteNr);
+    void enableSpriteDoubleHeight(const uint8_t spriteNr);
+    void disableSpriteDoubleHeight(const uint8_t spriteNr);
+    void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock);
+    void positionSprite(const uint8_t spriteNr, const struct Vector2ui position);
     void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from);
     void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void mirrorCircleSpriteSegment(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const struct Vector2uis circumfrancePoint);
     void makeCircleSpriteBresenham(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const uint8_t radius);
     void makeLineSpriteBresenham(volatile unsigned char* bitmapPointer, const struct Vector2uis origin, const struct Vector2uis destination);
+    void switchToHighResBitmapMode();
+    void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
+    void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
     void mirrorCircleHighResBitmapSegment(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const struct Vector2ui circumfrancePoint);
     void makeCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const uint8_t radius);
     void makeLineHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui origin, const struct Vector2ui destination);
     void fillCircleHighResBitmapSegment(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const struct Vector2ui circumfrancePoint);
     void makeFilledCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const uint8_t radius);
+    void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Vector2ui topLeftCorner, const struct Vector2ui bottomRightCorner, const uint8_t foregroundColor, const uint8_t backgroundColor);
+    void copyTile(volatile unsigned char* to, volatile unsigned char* from);
+    void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, volatile unsigned char* tileTemplate, const struct Vector2uis gridCell);
     void setBorderColor(const uint8_t color);
     void setBackgroundColor(const uint8_t color);
-    void switchToHighResBitmapMode();
-    void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
-    void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
 #endif

@@ -13,13 +13,61 @@ struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2ui
     return bitmapPosition;
 }
 
+struct Vector2uis rasterPositionToCharGridPosition(const struct Vector2ui rasterPosition) {
+    return (struct Vector2uis) {rasterPosition.x / BITS_PER_BYTE, rasterPosition.y / BITS_PER_BYTE};
+}
+
 struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition) { //Potentially optimize use smaller uints were possible
-    const uint16_t blockX = rasterPosition.x / BITS_PER_BYTE;
-    const uint16_t blockY = rasterPosition.y / BITS_PER_BYTE;
+    struct Vector2uis charGridPosition = rasterPositionToCharGridPosition(rasterPosition);
     const uint16_t pixelY = rasterPosition.y % BITS_PER_BYTE;
-    const uint16_t offset = (blockY * TEXT_SCREEN_COLUMNS + blockX) * BYTES_PER_CHAR_BITMAP + pixelY;
+    const uint16_t offset = (charGridPosition.y * TEXT_SCREEN_COLUMNS + charGridPosition.x) * BYTES_PER_CHAR_BITMAP + pixelY;
     const uint16_t pixelX = (BITS_PER_BYTE -1) - rasterPosition.x % BITS_PER_BYTE;
     return (struct BitmapPosition) {offset, pixelX};
+}
+
+void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary) {
+    *ADDRESS_TO_PTR(0xD025) = primery;
+    *ADDRESS_TO_PTR(0xD026) = secondary;
+}
+
+void setSpriteColor(const uint8_t spriteNr, uint8_t color) {
+    *ADDRESS_TO_PTR(SPRITE_0_COLOR + spriteNr) = color;
+}
+
+void enableSprite(const uint8_t spriteNr) {
+   *ADDRESS_TO_PTR(SPRITES_ENABLE) |= (1<<spriteNr); 
+}
+
+void disableSprite(const uint8_t spriteNr) {
+    *ADDRESS_TO_PTR(SPRITES_ENABLE) &= ~(1<<spriteNr);
+}
+
+void enableSpriteMulticolorMode(const uint8_t spriteNr) {
+    *ADDRESS_TO_PTR(0xD01C) |= (1<<spriteNr);
+}
+
+void disableSpriteMulticolorMode(const uint8_t spriteNr) {
+    *ADDRESS_TO_PTR(0xD01C) &= ~(1<<spriteNr);
+}
+
+void enableSpriteDoubleWidth(const uint8_t spriteNr) {
+    *ADDRESS_TO_PTR(0xD017) |= (1<<spriteNr);
+}
+
+void disableSpriteDoubleWidth(const uint8_t spriteNr) {
+    *ADDRESS_TO_PTR(0xD017) &= ~(1<<spriteNr);
+}
+
+void enableSpriteDoubleHeight(const uint8_t spriteNr) {
+    *ADDRESS_TO_PTR(0xD01D) |= (1<<spriteNr);
+}
+
+void disableSpriteDoubleHeight(const uint8_t spriteNr) {
+    *ADDRESS_TO_PTR(0xD01D) &= ~(1<<spriteNr);
+}
+
+void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock) {
+    *ADDRESS_TO_PTR(SPRITE_0_PTR + spriteNr) = bitmapBlock;
 }
 
 void positionSprite(const uint8_t spriteNr, const struct Vector2ui position) {
@@ -172,10 +220,6 @@ void fillCircleHighResBitmapSegment(volatile unsigned char* bitmapPointer, const
     const struct Vector2ui rightLowerSidePoint = {center.x + circumfrancePoint.y, center.y + circumfrancePoint.x};
     const struct Vector2ui leftBottomSidePoint = {center.x - circumfrancePoint.x, center.y + circumfrancePoint.y};
     const struct Vector2ui rightBottomSidePoint = {center.x + circumfrancePoint.x , center.y + circumfrancePoint.y};
-    /*makeLineHighResBitmapBresenham(bitmapPointer, leftTopSidePoint, rightTopSidePoint);
-    makeLineHighResBitmapBresenham(bitmapPointer, leftUpperSidePoint, rightUpperSidetPoint);
-    makeLineHighResBitmapBresenham(bitmapPointer, leftLowerSidePoint, rightLowerSidePoint);
-    makeLineHighResBitmapBresenham(bitmapPointer, leftBottomSidePoint, rightBottomSidePoint);*/
     for(uint16_t currentPixel = leftTopSidePoint.x; currentPixel < rightTopSidePoint.x; currentPixel++) {
         setHighResBitmapPixel(bitmapPointer, (struct Vector2ui) {currentPixel, leftTopSidePoint.y});
     }
@@ -206,6 +250,20 @@ void makeFilledCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointe
         circumfrancePoint.x++;
         fillCircleHighResBitmapSegment(bitmapPointer, center, circumfrancePoint);
     }
+}
+
+void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Vector2ui topLeftCorner, const struct Vector2ui bottomRightCorner, const uint8_t foregroundColor, const uint8_t backgroundColor) {
+    const struct Vector2uis topLeftGridCell = rasterPositionToCharGridPosition(topLeftCorner);
+    const struct Vector2uis bottomRightGridCell = rasterPositionToCharGridPosition(bottomRightCorner);
+    for(uint8_t currentRow = topLeftGridCell.y; currentRow <= bottomRightGridCell.y; currentRow++) {
+        for(uint8_t currentColumn = topLeftGridCell.x; currentColumn <= bottomRightGridCell.x; currentColumn++) {
+             screenRamPointer[currentRow * TEXT_SCREEN_COLUMNS + currentColumn] = (foregroundColor << BITS_PER_NIBBLE) | backgroundColor;
+        }
+    }
+}
+
+void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, volatile unsigned char* tileTemplate, const struct Vector2uis gridCell) {
+    
 }
 
 void setBorderColor(uint8_t color) {
