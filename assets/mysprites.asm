@@ -1,12 +1,7 @@
 
 ; 17 sprites generated with spritemate on 6/13/2026, 4:28:24 PM
 ; Byte 64 of each sprite contains multicolor (high nibble) & color (low nibble) information
-
-LDA #$02 ; sprite multicolor 1
-STA $D025
-LDA #$05 ; sprite multicolor 2
-STA $D026
-
+*=$C000
 
 ; sprite 1 / multicolor / color: $08
 sprite1
@@ -20,7 +15,7 @@ sprite1
 !byte $80,$09,$55,$60,$09,$55,$60,$88
 
 ; sprite 2 / multicolor / color: $08
-sprite1
+sprite2
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
@@ -31,7 +26,7 @@ sprite1
 !byte $60,$09,$55,$60,$09,$55,$60,$88
 
 ; sprite 3 / multicolor / color: $06
-sprite2
+sprite3
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
@@ -42,7 +37,7 @@ sprite2
 !byte $c0,$03,$ff,$c0,$03,$ff,$c0,$86
 
 ; sprite 4 / multicolor / color: $06
-sprite2
+sprite4
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
@@ -53,7 +48,7 @@ sprite2
 !byte $f0,$0f,$ff,$f0,$03,$ff,$c0,$86
 
 ; sprite 5 / multicolor / color: $06
-sprite2
+sprite5
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
@@ -64,7 +59,7 @@ sprite2
 !byte $c0,$03,$ff,$c0,$03,$ff,$c0,$86
 
 ; sprite 6 / multicolor / color: $06
-sprite2
+sprite6
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
@@ -75,7 +70,7 @@ sprite2
 !byte $f0,$0f,$ff,$f0,$03,$ff,$c0,$86
 
 ; sprite 7 / multicolor / color: $06
-sprite2
+sprite7
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$2a,$00
@@ -86,7 +81,7 @@ sprite2
 !byte $c0,$03,$ff,$c0,$03,$ff,$c0,$86
 
 ; sprite 8 / multicolor / color: $06
-sprite2
+sprite8
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$0a
 !byte $aa,$80,$2a,$aa,$a0,$2a,$aa,$a0
@@ -97,7 +92,7 @@ sprite2
 !byte $c0,$03,$ff,$c0,$03,$ff,$c0,$86
 
 ; sprite 9 / multicolor / color: $06
-sprite2
+sprite9
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$0a
 !byte $aa,$80,$2a,$aa,$a0,$2a,$aa,$a0
@@ -108,7 +103,7 @@ sprite2
 !byte $f0,$0f,$ff,$f0,$03,$ff,$c0,$86
 
 ; sprite 10 / multicolor / color: $06
-sprite2
+sprite10
 !byte $aa,$aa,$aa,$aa,$aa,$aa,$aa,$aa
 !byte $aa,$aa,$aa,$aa,$aa,$aa,$aa,$aa
 !byte $aa,$aa,$aa,$aa,$aa,$aa,$aa,$aa
@@ -119,7 +114,7 @@ sprite2
 !byte $c0,$03,$ff,$c0,$03,$ff,$c0,$86
 
 ; sprite 11 / multicolor / color: $07
-sprite1
+sprite11
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$20,$00,$00,$a8,$00
@@ -130,7 +125,7 @@ sprite1
 !byte $00,$00,$cc,$00,$00,$cc,$00,$87
 
 ; sprite 12 / multicolor / color: $07
-sprite1
+sprite12
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$20,$00,$00,$a8,$00
@@ -141,7 +136,7 @@ sprite1
 !byte $00,$00,$cc,$00,$03,$cc,$00,$87
 
 ; sprite 13 / multicolor / color: $07
-sprite1
+sprite13
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$20,$00,$00,$a8,$00
@@ -152,7 +147,7 @@ sprite1
 !byte $00,$00,$cc,$00,$00,$cf,$00,$87
 
 ; sprite 14 / multicolor / color: $07
-sprite1
+sprite14
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$20,$00,$00,$a8,$00
@@ -163,7 +158,7 @@ sprite1
 !byte $00,$00,$cc,$00,$03,$cf,$00,$87
 
 ; sprite 15 / multicolor / color: $07
-sprite1
+sprite15
 !byte $00,$40,$00,$00,$10,$40,$00,$15
 !byte $40,$00,$15,$00,$00,$05,$00,$00
 !byte $54,$00,$01,$65,$00,$01,$a9,$00
@@ -174,7 +169,7 @@ sprite1
 !byte $00,$00,$cc,$00,$00,$cc,$00,$87
 
 ; sprite 16 / multicolor / color: $07
-sprite1
+sprite16
 !byte $00,$00,$00,$00,$00,$00,$00,$15
 !byte $00,$00,$15,$00,$00,$05,$00,$00
 !byte $54,$00,$01,$65,$00,$01,$a9,$00
@@ -185,7 +180,7 @@ sprite1
 !byte $00,$00,$cc,$00,$00,$cc,$00,$87
 
 ; sprite 17 / multicolor / color: $07
-sprite5
+sprite17
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
 !byte $00,$00,$00,$00,$00,$00,$00,$00
