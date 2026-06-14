@@ -262,8 +262,19 @@ void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointe
     }
 }
 
-void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, volatile unsigned char* tileTemplate, const struct Vector2uis gridCell) {
-    
+void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell) {
+    for(uint8_t currentRow = 0; currentRow < BYTES_PER_CHAR_BITMAP; currentRow++) {
+        *ADDRESS_TO_PTR(bitmapPointer + gridCell.y * TEXT_SCREEN_COLUMNS * BYTES_PER_CHAR_BITMAP + gridCell.x * BYTES_PER_CHAR_BITMAP) = tile.bitmapData[currentRow];
+    }
+    *ADDRESS_TO_PTR(screenRamPointer + gridCell.y * TEXT_SCREEN_COLUMNS + gridCell.x) = tile.colors;
+}
+
+void placeHighResBitmapMultiTile(volatile unsigned char *bitmapPointer, volatile unsigned char *screenRamPointer, struct HighResBitmapMultiTile tiles, const struct Vector2uis gridCell) {
+    for(uint8_t currentRow = gridCell.x; currentRow < tiles.height; currentRow++) {
+        for(uint8_t currentColumn = gridCell.y; currentColumn < tiles.width; currentColumn++) {
+            //placeHighResBitmapMultiTile(bitmapPointer + currentRow * TEXT_SCREEN_COLUMNS * BYTES_PER_CHAR_BITMAP + currentColumn * BYTES_PER_CHAR_BITMAP, screenRamPointer)
+        }
+    }
 }
 
 void setBorderColor(uint8_t color) {

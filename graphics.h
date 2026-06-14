@@ -77,6 +77,17 @@
         uint8_t bit;
     };
 
+    struct HighResBitmapTile {
+        volatile unsigned char* bitmapData;
+        uint8_t colors;
+    };
+
+    struct HighResBitmapMultiTile {
+        struct HighResBitmapTile* tiles;
+        uint8_t width;
+        uint8_t height;
+    };
+
     struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position);
     struct Vector2uis rasterPositionToCharGridPosition(const struct Vector2ui rasterPosition);
     struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
@@ -108,7 +119,8 @@
     void makeFilledCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointer, const struct Vector2ui center, const uint8_t radius);
     void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Vector2ui topLeftCorner, const struct Vector2ui bottomRightCorner, const uint8_t foregroundColor, const uint8_t backgroundColor);
     void copyTile(volatile unsigned char* to, volatile unsigned char* from);
-    void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, volatile unsigned char* tileTemplate, const struct Vector2uis gridCell);
+    void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell);
+    void placeHighResBitmapMultiTile(volatile unsigned char *bitmapPointer, volatile unsigned char *screenRamPointer, struct HighResBitmapMultiTile tiles, const struct Vector2uis gridCell)
     void setBorderColor(const uint8_t color);
     void setBackgroundColor(const uint8_t color);
 #endif

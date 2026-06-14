@@ -77,6 +77,13 @@ const unsigned char lowerHouseTileTemplate[BYTES_PER_CHAR_BITMAP * HOUSE_TILE_WI
     #embed "assets/background.art" clang::offset((5 * TEXT_SCREEN_COLUMNS + 7) * BYTES_PER_CHAR_BITMAP) limit(4 * BYTES_PER_CHAR_BITMAP)
 };
 
+const unsigned char* grass[] = { grassTile1Template, grassTile2Template, grassTile3Template};
+const struct Vector2ui grassPositions[] = {
+    {0, 0},
+    {1, 1},
+    {2, 2}
+};
+
 void bindSprite(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct Sprite* spriteStruct) {
     enableSprite(spriteNr);
     setSpriteColor(spriteNr, spriteStruct->color);
@@ -106,18 +113,27 @@ void drawLake(const struct Vector2ui center, const uint8_t radius) {
     colorRectangularHighResBitmapRegion(ADDRESS_TO_PTR(SCREEN_RAM),leftTopCorner, rightBottomCorner, COLOR_LIGHT_BLUE, COLOR_GREEN);
 }
 
-void placeGrass(const unsigned char** templates, uint16_t amount) {
-    
+void placeGrass(const struct HighResBitmapTile* tiles, const struct Vector2uis* gridPositions, const uint16_t amount) {
+    for(uint8_t currentPatchOfGrass = 0; currentPatchOfGrass < amount; currentPatchOfGrass++) {
+        placeHighResBitmapTile(ADDRESS_TO_PTR(BITMAP_RAM), ADDRESS_TO_PTR(SCREEN_RAM), tiles[currentPatchOfGrass], gridPositions[currentPatchOfGrass % amount]);
+    }
 }
 
 int main(void) {
+    //Init scene data
+    struct HighResBitmapTile tiles[] = {
+        {
+            (volatile unsigned char*)grassTile1Template,
+            (uint8_t)(1 << COLOR_LIGHT_GREEN) | (1 << COLOR_GREEN)
+        }
+    };
     //Init screen
     setBorderColor(COLOR_BLACK);
     switchToHighResBitmapMode();
     fillMemory(ADDRESS_TO_PTR(SCREEN_RAM), SCREEN_SIZE, (COLOR_RED << BITS_PER_NIBBLE) | (COLOR_GREEN));
     fillMemory(ADDRESS_TO_PTR(BITMAP_RAM), BITMAP_SIZE, 0);
     drawLake((struct Vector2ui) {BITMAP_WIDTH / 2, BITMAP_HEIGHT / 2}, BITMAP_HEIGHT / 4);
-    
+    placeGrass(&grass, &grassPositions, 10);
     //Init sprites
     setSharedMulticolorSpriteColors(COLOR_BROWN, COLOR_LIGHT_GRAY);
     struct Sprite playerSprite = {
@@ -137,6 +153,6 @@ int main(void) {
     copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Template);
     bool gamerunning = true;
     while (gamerunning) {
-
+        
     }
 }
