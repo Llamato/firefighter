@@ -77,11 +77,105 @@ const unsigned char lowerHouseTileTemplate[BYTES_PER_CHAR_BITMAP * HOUSE_TILE_WI
     #embed "assets/background.art" clang::offset((5 * TEXT_SCREEN_COLUMNS + 7) * BYTES_PER_CHAR_BITMAP) limit(4 * BYTES_PER_CHAR_BITMAP)
 };
 
-const unsigned char* grass[] = { grassTile1Template, grassTile2Template, grassTile3Template};
-const struct Vector2ui grassPositions[] = {
-    {0, 0},
-    {1, 1},
-    {2, 2}
+struct HighResBitmapTile grassTiles[] = {
+    {
+        (volatile unsigned char*)grassTile1Template,
+        (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
+    },
+    {
+        (volatile unsigned char*)grassTile2Template,
+        (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
+    },
+    {
+        (volatile unsigned char*)grassTile3Template,
+        (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
+    }
+};
+
+const struct Vector2uis grassPositions[] = {
+    {13, 1},
+    {17, 1},
+    {20, 1},
+    {4, 2},
+    {7, 2},
+    {17, 2},
+    {22, 2},
+    {18, 3},
+    {22, 3},
+    {36, 3},
+    {37, 3},
+    {3, 4},
+    {15, 4},
+    {16,4},
+    {36, 4},
+    {37, 4},
+    {3, 5},
+    {4, 5},
+    {6, 5},
+    {31, 5},
+    {36, 6},
+    {13, 8},
+    {36, 8},
+    {37, 8},
+    {12, 9},
+    {38,9},
+    {39, 9},
+    {1, 10},
+    {31, 10},
+    {35, 10},
+    {36, 10},
+    {6, 11},
+    {8, 11},
+    {9, 11},
+    {11, 11},
+    {12, 11},
+    {31, 11},
+    {32, 11},
+    {33, 11},
+    {35, 11},
+    {36, 11},
+    {2, 12},
+    {3, 12},
+    {1, 13},
+    {4, 13},
+    {13, 13},
+    {1, 14},
+    {4, 14},
+    {13, 14},
+    {7, 15},
+    {2, 16},
+    {3, 16},
+    {11, 16},
+    {12, 16},
+    {31, 16},
+    {37, 16},
+    {2, 17},
+    {3, 17},
+    {8, 17},
+    {11, 17},
+    {12, 17},
+    {35, 17},
+    {36, 17},
+    {37, 17},
+    {4, 18},
+    {8, 18},
+    {11, 18},
+    {12, 18},
+    {35, 18},
+    {4, 19},
+    {8, 19},
+    {15, 19},
+    {17, 19},
+    {10, 20},
+    {11, 20},
+    {28, 20},
+    {29, 20},
+    {2, 21},
+    {31, 21},
+    {32, 21},
+    {2, 22},
+    {31, 22},
+    {32, 22}
 };
 
 void bindSprite(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct Sprite* spriteStruct) {
@@ -113,27 +207,23 @@ void drawLake(const struct Vector2ui center, const uint8_t radius) {
     colorRectangularHighResBitmapRegion(ADDRESS_TO_PTR(SCREEN_RAM),leftTopCorner, rightBottomCorner, COLOR_LIGHT_BLUE, COLOR_GREEN);
 }
 
-void placeGrass(const struct HighResBitmapTile* tiles, const struct Vector2uis* gridPositions, const uint16_t amount) {
+void placeGrass(const struct Vector2uis* gridPositions, const uint16_t amount) { 
     for(uint8_t currentPatchOfGrass = 0; currentPatchOfGrass < amount; currentPatchOfGrass++) {
-        placeHighResBitmapTile(ADDRESS_TO_PTR(BITMAP_RAM), ADDRESS_TO_PTR(SCREEN_RAM), tiles[currentPatchOfGrass], gridPositions[currentPatchOfGrass % amount]);
+        placeHighResBitmapTile(ADDRESS_TO_PTR(BITMAP_RAM), ADDRESS_TO_PTR(SCREEN_RAM), grassTiles[currentPatchOfGrass % (sizeof(grassTiles) / sizeof(struct HighResBitmapTile))], gridPositions[currentPatchOfGrass]);
     }
 }
 
 int main(void) {
-    //Init scene data
-    struct HighResBitmapTile tiles[] = {
-        {
-            (volatile unsigned char*)grassTile1Template,
-            (uint8_t)(1 << COLOR_LIGHT_GREEN) | (1 << COLOR_GREEN)
-        }
-    };
     //Init screen
     setBorderColor(COLOR_BLACK);
     switchToHighResBitmapMode();
-    fillMemory(ADDRESS_TO_PTR(SCREEN_RAM), SCREEN_SIZE, (COLOR_RED << BITS_PER_NIBBLE) | (COLOR_GREEN));
+    fillMemory(ADDRESS_TO_PTR(SCREEN_RAM), SCREEN_SIZE, (COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN);
     fillMemory(ADDRESS_TO_PTR(BITMAP_RAM), BITMAP_SIZE, 0);
+    
+    //Init bitmap
     drawLake((struct Vector2ui) {BITMAP_WIDTH / 2, BITMAP_HEIGHT / 2}, BITMAP_HEIGHT / 4);
-    placeGrass(&grass, &grassPositions, 10);
+    placeGrass((const struct Vector2uis*) &grassPositions, sizeof(grassPositions) / sizeof(struct Vector2uis));
+
     //Init sprites
     setSharedMulticolorSpriteColors(COLOR_BROWN, COLOR_LIGHT_GRAY);
     struct Sprite playerSprite = {
@@ -144,13 +234,10 @@ int main(void) {
         false, 
         false,
     };
-    /*enableSprite(0);
-    setSpriteColor(0, playerSprite.color);
-    setSpriteBitmapPointer(0, SPRITE_0_BLOCK);
-    positionSprite(0, playerSprite.position);
-    enableSpriteMulticolorMode(0);*/
     bindSprite(0, SPRITE_0_BLOCK, &playerSprite);
     copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Template);
+
+    //Gameloop
     bool gamerunning = true;
     while (gamerunning) {
         

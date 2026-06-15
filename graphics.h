@@ -38,6 +38,7 @@
 
     //Hardware limitations
     #define BITS_PER_BYTE 8
+    #define LOAD_IN_ADDRESS_BYTES 2
     #define BITS_PER_NIBBLE BITS_PER_BYTE / 2
     #define TEXT_SCREEN_COLUMNS 40
     #define TEXT_SCREEN_ROWS 25
@@ -54,7 +55,7 @@
     #define SPRITE_BITMAP_ADDRESS(SPRITE_BLOCK) (SPRITE_BLOCK * SPRITE_SIZE)
     #define POINT_SPRITE(SPRITE_NR, BLOCK) *ADDRESS_TO_PTR(SPRITE_##SPRITE_NR##_PTR) = BLOCK;
     #define SPRITE_EMBED_PARAMS(INDEX) clang::offset(INDEX * SPRITE_SIZE) limit(SPRITE_SIZE)
-    #define TILE_EMBED_PARAMS(INDEX) clang::offset(INDEX * BYTES_PER_CHAR_BITMAP) limit(BYTES_PER_CHAR_BITMAP)
+    #define TILE_EMBED_PARAMS(INDEX) clang::offset(INDEX * BYTES_PER_CHAR_BITMAP + LOAD_IN_ADDRESS_BYTES) limit(BYTES_PER_CHAR_BITMAP)
     #define COLOR_BLACK 0
     #define COLOR_WHITE 1
     #define COLOR_RED 2
@@ -120,7 +121,7 @@
     void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Vector2ui topLeftCorner, const struct Vector2ui bottomRightCorner, const uint8_t foregroundColor, const uint8_t backgroundColor);
     void copyTile(volatile unsigned char* to, volatile unsigned char* from);
     void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell);
-    void placeHighResBitmapMultiTile(volatile unsigned char *bitmapPointer, volatile unsigned char *screenRamPointer, struct HighResBitmapMultiTile tiles, const struct Vector2uis gridCell)
+    void placeHighResBitmapMultiTile(volatile unsigned char *bitmapPointer, volatile unsigned char *screenRamPointer, struct HighResBitmapMultiTile tiles, const struct Vector2uis gridCell);
     void setBorderColor(const uint8_t color);
     void setBackgroundColor(const uint8_t color);
 #endif
