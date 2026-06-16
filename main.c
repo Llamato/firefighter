@@ -77,7 +77,7 @@ const unsigned char lowerHouseTileTemplate[BYTES_PER_CHAR_BITMAP * HOUSE_TILE_WI
     #embed "assets/background.art" clang::offset((5 * TEXT_SCREEN_COLUMNS + 7) * BYTES_PER_CHAR_BITMAP) limit(4 * BYTES_PER_CHAR_BITMAP)
 };
 
-struct HighResBitmapTile grassTiles[] = {
+const struct HighResBitmapTile grassTiles[] = {
     {
         (volatile unsigned char*)grassTile1Template,
         (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
@@ -90,6 +90,39 @@ struct HighResBitmapTile grassTiles[] = {
         (volatile unsigned char*)grassTile3Template,
         (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
     }
+};
+
+const struct HighResBitmapTile houseTiles[] = {
+    {
+        (volatile unsigned char*) upperHouseTileTemplate,
+        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN
+    },
+    {
+        (volatile unsigned char*) upperHouseTileTemplate+BYTES_PER_CHAR_BITMAP,
+        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN
+    },
+    {
+        (volatile unsigned char*) upperHouseTileTemplate+BYTES_PER_CHAR_BITMAP*2,
+        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN
+    },
+    {
+        (volatile unsigned char*) lowerHouseTileTemplate,
+        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN
+    },
+    {
+        (volatile unsigned char*) lowerHouseTileTemplate+BYTES_PER_CHAR_BITMAP,
+        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_BROWN
+    },
+    {
+        (volatile unsigned char*) lowerHouseTileTemplate+BYTES_PER_CHAR_BITMAP*2,
+        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_BROWN
+    }
+};
+
+struct HighResBitmapMultiTile house = {
+    (struct HighResBitmapTile*) houseTiles,
+    HOUSE_TILE_WIDTH,
+    HOUSE_TILE_HEIGHT
 };
 
 const struct Vector2uis grassPositions[] = {
@@ -234,8 +267,20 @@ void drawLake(const struct Vector2ui center, const uint8_t radius) {
 }
 
 void placeGrass(const struct Vector2uis* gridPositions, const uint16_t amount) { 
-    for(uint8_t currentPatchOfGrass = 0; currentPatchOfGrass < amount; currentPatchOfGrass++) {
+    for(uint16_t currentPatchOfGrass = 0; currentPatchOfGrass < amount; currentPatchOfGrass++) {
         placeHighResBitmapTile(ADDRESS_TO_PTR(BITMAP_RAM), ADDRESS_TO_PTR(SCREEN_RAM), grassTiles[currentPatchOfGrass % (sizeof(grassTiles) / sizeof(struct HighResBitmapTile))], gridPositions[currentPatchOfGrass]);
+    }
+}
+
+void spawnFlame(const struct Vector2uis gridPosition) {
+
+}
+
+void placeHouse(const struct Vector2uis gridPosition) {
+    for(uint8_t currentRow = 0; currentRow < house.height; currentRow++) {
+        for(uint8_t currentColumn = 0; currentColumn < house.width; currentColumn++) {
+            placeHighResBitmapTile(ADDRESS_TO_PTR(BITMAP_RAM), ADDRESS_TO_PTR(SCREEN_RAM), house.tiles[currentRow * house.width + currentColumn], (struct Vector2uis) {gridPosition.x + currentColumn, gridPosition.y + currentRow});
+        }
     }
 }
 
@@ -249,7 +294,11 @@ int main(void) {
     //Init bitmap
     drawLake((struct Vector2ui) {BITMAP_WIDTH / 2, BITMAP_HEIGHT / 2}, BITMAP_HEIGHT / 4);
     placeGrass((const struct Vector2uis*) &grassPositions, sizeof(grassPositions) / sizeof(struct Vector2uis));
-
+    placeHouse((struct Vector2uis) {10, 5});
+    placeHouse((struct Vector2uis) {30, 5});
+    placeHouse((struct Vector2uis) {10, 20});
+    placeHouse((struct Vector2uis) {30, 16});
+    
     //Init sprites
     setSharedMulticolorSpriteColors(COLOR_BROWN, COLOR_LIGHT_GRAY);
     struct Sprite playerSprite = {
