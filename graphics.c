@@ -9,7 +9,7 @@
 
 struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position) {
     const uint16_t bitPosition = position.y * SPRITE_BYTES_PER_ROW * BITS_PER_BYTE + position.x;
-    struct BitmapPosition bitmapPosition = { bitPosition / BITS_PER_BYTE, bitPosition % 8};
+    struct BitmapPosition bitmapPosition = { bitPosition / BITS_PER_BYTE, bitPosition % BITS_PER_BYTE};
     return bitmapPosition;
 }
 
@@ -128,7 +128,6 @@ void makeLineSpriteBresenham(volatile unsigned char* bitmapPointer, const struct
     int16_t y0 = origin.y;
     int16_t x1 = destination.x;
     int16_t y1 = destination.y;
-    
     int16_t dx = abs(x1 - x0);
     int16_t dy = abs(y1 - y0);
     int16_t sx = (x0 < x1) ? 1 : -1;
@@ -274,6 +273,7 @@ void placeHighResBitmapMultiTile(volatile unsigned char *bitmapPointer, volatile
     for(uint8_t currentRow = gridCell.x; currentRow < tiles.height; currentRow++) {
         for(uint8_t currentColumn = gridCell.y; currentColumn < tiles.width; currentColumn++) {
             //placeHighResBitmapMultiTile(bitmapPointer + currentRow * TEXT_SCREEN_COLUMNS * BYTES_PER_CHAR_BITMAP + currentColumn * BYTES_PER_CHAR_BITMAP, screenRamPointer)
+
         }
     }
 }
