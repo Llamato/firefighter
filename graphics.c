@@ -25,6 +25,14 @@ struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rast
     return (struct BitmapPosition) {offset, pixelX};
 }
 
+struct Vector2ui rasterPositionToSpritePosition(const struct Vector2uis rasterPosition) {
+    return (struct Vector2ui) {rasterPosition.x * 8 + 24, rasterPosition.y * 8 + 50};
+}
+
+struct Vector2uis spritePositionToRasterPosition(const struct Vector2ui spritePosition) {
+    return (struct Vector2uis) {(spritePosition.x - 24) / 8, (spritePosition.y - 50) / 8};
+}
+
 void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary) {
     *ADDRESS_TO_PTR(0xD025) = primery;
     *ADDRESS_TO_PTR(0xD026) = secondary;
@@ -72,10 +80,14 @@ void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock) {
 
 void positionSprite(const uint8_t spriteNr, const struct Vector2ui position) {
     volatile unsigned char* spriteXlowPositionRegisterAddress = ADDRESS_TO_PTR(SPRITE_0_POSITION + spriteNr * 2);
-    uint8_t positionXlow = position.x & 0xFF;
-    bool positionXhigh = position.y & 0x100;
+    const uint8_t positionXlow = position.x & 0xff;
+    const bool positionXhigh = position.x > UINT8_MAX;
     *spriteXlowPositionRegisterAddress = positionXlow;
-    *ADDRESS_TO_PTR(SPRITES_X_HIGH) = (SPRITES_X_HIGH & ~(1 << spriteNr) | (positionXhigh << spriteNr));
+    if(positionXhigh) {
+        *ADDRESS_TO_PTR(SPRITES_X_HIGH) |= (1 << spriteNr);
+    } else {
+        *ADDRESS_TO_PTR(SPRITES_X_HIGH) &= ~(1 << spriteNr);
+    }
     volatile unsigned char* spriteYpositionRegisterAddress = spriteXlowPositionRegisterAddress+1;
     *spriteYpositionRegisterAddress = position.y;
 }
@@ -88,12 +100,12 @@ void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from) 
 
 void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position) {
     struct BitmapPosition bitmapPosition = spritePixelPositionToBitmapPosition(position);
-    bitmapPointer[bitmapPosition.byte] |= (1<<((BITS_PER_BYTE - 1) - bitmapPosition.bit)); 
+    bitmapPointer[bitmapPosition.byte] |= (1 << ((BITS_PER_BYTE - 1) - bitmapPosition.bit)); 
 }
 
 void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position) {
     struct BitmapPosition bitmapPosition = spritePixelPositionToBitmapPosition(position);
-    bitmapPointer[bitmapPosition.byte] &= ~(1<<((BITS_PER_BYTE -1) - bitmapPosition.bit));
+    bitmapPointer[bitmapPosition.byte] &= ~(1 << ((BITS_PER_BYTE -1) - bitmapPosition.bit));
 }
 
 void mirrorCircleSpriteSegment(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const struct Vector2uis circumfrancePoint) {

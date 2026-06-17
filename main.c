@@ -3,6 +3,8 @@
 #include "common.h"
 #include "gllm/gllm.h"
 #include "graphics.h"
+#include "sid.h"
+#include "timer.h"
 
 #define SPRITE_0_BLOCK 252
 #define SPRITE_1_BLOCK 254
@@ -15,6 +17,16 @@
 
 #define HOUSE_TILE_WIDTH 3
 #define HOUSE_TILE_HEIGHT 2
+#define HOUSE_UPPER_FOREGROUND_COLOR COLOR_LIGHT_RED
+#define HOUSE_UPPER_BACKGROUND_COLOR COLOR_GREEN
+#define HOUSE_LOWER_FOREGROUND_COLOR COLOR_LIGHT_RED
+#define HOUSE_LOWER_INSIDE_BACKGROUND_COLOR COLOR_BROWN
+#define HOUSE_LOWER_OUTSIDE_BACKGROUND_COLOR COLOR_GREEN
+
+#define GRASS_FOREGROUND_COLOR COLOR_LIGHT_GREEN
+#define GRASS_BACKGROUND_COLOR COLOR_GREEN
+
+#define HARDWARE_PLAYER_SPRITE_INDEX 0
 
 struct Sprite {
     struct Vector2ui position;
@@ -95,27 +107,27 @@ const struct HighResBitmapTile grassTiles[] = {
 const struct HighResBitmapTile houseTiles[] = {
     {
         (volatile unsigned char*) upperHouseTileTemplate,
-        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN
+        (uint8_t)(HOUSE_UPPER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_UPPER_BACKGROUND_COLOR
     },
     {
         (volatile unsigned char*) upperHouseTileTemplate+BYTES_PER_CHAR_BITMAP,
-        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN
+        (uint8_t)(HOUSE_UPPER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_UPPER_BACKGROUND_COLOR
     },
     {
         (volatile unsigned char*) upperHouseTileTemplate+BYTES_PER_CHAR_BITMAP*2,
-        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN
+        (uint8_t)(HOUSE_UPPER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_UPPER_BACKGROUND_COLOR
     },
     {
         (volatile unsigned char*) lowerHouseTileTemplate,
-        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN
+        (uint8_t)(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_OUTSIDE_BACKGROUND_COLOR
     },
     {
         (volatile unsigned char*) lowerHouseTileTemplate+BYTES_PER_CHAR_BITMAP,
-        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_BROWN
+        (uint8_t)(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
     },
     {
         (volatile unsigned char*) lowerHouseTileTemplate+BYTES_PER_CHAR_BITMAP*2,
-        (uint8_t)(COLOR_RED << BITS_PER_NIBBLE) | COLOR_BROWN
+        (uint8_t)(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
     }
 };
 
@@ -237,6 +249,41 @@ const struct Vector2uis grassPositions[] = {
     {29, 25}
 };
 
+const struct Vector2uis housePositions[] = {
+    {10, 5},
+    {30, 5},
+    {10, 20},
+    {30, 16}
+};
+
+struct Sprite playerSprite = {
+    (struct Vector2ui) {160, 200},
+    COLOR_YELLOW,
+    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_BLOCK)),
+    true,
+    false, 
+    false,
+};
+
+struct Sprite flameSprites[] = {
+    {
+        (struct Vector2ui) {0, 0},
+        COLOR_ORANGE,
+        ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_BLOCK)),
+        true,
+        false,
+        false
+    },
+    {
+        (struct Vector2ui) {320, 0},
+        COLOR_ORANGE,
+        ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_BLOCK)),
+        true,
+        false,
+        false
+    }
+};
+
 void bindSprite(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct Sprite* spriteStruct) {
     enableSprite(spriteNr);
     setSpriteColor(spriteNr, spriteStruct->color);
@@ -272,49 +319,65 @@ void placeGrass(const struct Vector2uis* gridPositions, const uint16_t amount) {
     }
 }
 
-void spawnFlame(const struct Vector2uis gridPosition) {
-
-}
-
-void placeHouse(const struct Vector2uis gridPosition) {
-    for(uint8_t currentRow = 0; currentRow < house.height; currentRow++) {
-        for(uint8_t currentColumn = 0; currentColumn < house.width; currentColumn++) {
-            placeHighResBitmapTile(ADDRESS_TO_PTR(BITMAP_RAM), ADDRESS_TO_PTR(SCREEN_RAM), house.tiles[currentRow * house.width + currentColumn], (struct Vector2uis) {gridPosition.x + currentColumn, gridPosition.y + currentRow});
+void placeHouses(const struct Vector2uis* gridPositions, const uint8_t amount) {
+    for(uint8_t currentHouse = 0; currentHouse < amount; currentHouse++) {
+        for(uint8_t currentRow = 0; currentRow < house.height; currentRow++) {
+            for(uint8_t currentColumn = 0; currentColumn < house.width; currentColumn++) {
+                placeHighResBitmapTile(ADDRESS_TO_PTR(BITMAP_RAM), ADDRESS_TO_PTR(SCREEN_RAM), house.tiles[currentRow * house.width + currentColumn], (struct Vector2uis) {gridPositions[currentHouse].x + currentColumn, gridPositions[currentHouse].y + currentRow});
+            }
         }
     }
 }
 
+struct Sprite* activeflames[HARDWARE_SPRITE_COUNT-1];
+void spawnFlame(const struct Vector2ui position) {
+    
+}
+
+void flickerFlame(const uint8_t sprite) {
+
+}
+
+volatile uint16_t framecounter = 0;
 int main(void) {
+    //Init sid
+    initNoiseVoiceRnd(UINT16_MAX);
+
+    //Init timer
+    setTimerLatch(ADDRESS_TO_PTR(CIA1_BASE_ADDRESS), TIMERA_INDEX, 0xff);
+
     //Init screen
     setBorderColor(COLOR_BLACK);
     switchToHighResBitmapMode();
-    fillMemory(ADDRESS_TO_PTR(SCREEN_RAM), SCREEN_SIZE, (COLOR_RED << BITS_PER_NIBBLE) | COLOR_GREEN);
+    fillMemory(ADDRESS_TO_PTR(SCREEN_RAM), SCREEN_SIZE, (COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN);
     fillMemory(ADDRESS_TO_PTR(BITMAP_RAM), BITMAP_SIZE, 0);
     
     //Init bitmap
     drawLake((struct Vector2ui) {BITMAP_WIDTH / 2, BITMAP_HEIGHT / 2}, BITMAP_HEIGHT / 4);
-    placeGrass((const struct Vector2uis*) &grassPositions, sizeof(grassPositions) / sizeof(struct Vector2uis));
-    placeHouse((struct Vector2uis) {10, 5});
-    placeHouse((struct Vector2uis) {30, 5});
-    placeHouse((struct Vector2uis) {10, 20});
-    placeHouse((struct Vector2uis) {30, 16});
-    
+    placeGrass((const struct Vector2uis*) grassPositions, sizeof(grassPositions) / sizeof(struct Vector2uis));
+    placeHouses((const struct Vector2uis*) housePositions, sizeof(housePositions) / sizeof(struct Vector2uis));
+
     //Init sprites
     setSharedMulticolorSpriteColors(COLOR_BROWN, COLOR_LIGHT_GRAY);
-    struct Sprite playerSprite = {
-        (struct Vector2ui) {160, 200},
-        COLOR_YELLOW,
-        ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_BLOCK)),
-        true,
-        false, 
-        false,
-    };
-    bindSprite(0, SPRITE_0_BLOCK, &playerSprite);
+    bindSprite(HARDWARE_PLAYER_SPRITE_INDEX, SPRITE_0_BLOCK, &playerSprite);
     copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Template);
+    bindSprite(1, SPRITE_1_BLOCK, &flameSprites[0]);
+    copySpriteBitmap(flameSprites[0].bitmapPtr, (volatile unsigned char*) flameSprite1Template);
+    bindSprite(2, SPRITE_2_BLOCK, &flameSprites[1]);
+    copySpriteBitmap(flameSprites[1].bitmapPtr, (volatile unsigned char*) flameSprite2Template);
+    bindSprite(3, SPRITE_1_BLOCK, &flameSprites[0]);
+    bindSprite(4, SPRITE_2_BLOCK, &flameSprites[1]);
+    bindSprite(5, SPRITE_1_BLOCK, &flameSprites[0]);
+    bindSprite(6, SPRITE_2_BLOCK, &flameSprites[1]);
+    bindSprite(7, SPRITE_1_BLOCK, &flameSprites[0]);
 
     //Gameloop
     bool gamerunning = true;
+    volatile bool flametime = true;
     while (gamerunning) {
-        
+        if(flametime) {
+            spawnFlame((struct Vector2ui) {0, framecounter % BITMAP_WIDTH});
+        }
+        framecounter++;
     }
 }

@@ -51,8 +51,9 @@
     #define BITMAP_SIZE_BITS 64000
     #define SPRITE_COLUMNS 24
     #define SPRITE_ROWS 21
-    #define SPRITE_BYTES_PER_ROW SPRITE_COLUMNS / BITS_PER_BYTE
     #define SPRITE_SIZE 64
+    #define HARDWARE_SPRITE_COUNT 8
+    #define SPRITE_BYTES_PER_ROW SPRITE_COLUMNS / BITS_PER_BYTE
     #define SPRITE_BITMAP_ADDRESS(SPRITE_BLOCK) (SPRITE_BLOCK * SPRITE_SIZE)
     #define POINT_SPRITE(SPRITE_NR, BLOCK) *ADDRESS_TO_PTR(SPRITE_##SPRITE_NR##_PTR) = BLOCK;
     #define SPRITE_EMBED_PARAMS(INDEX) clang::offset(INDEX * SPRITE_SIZE) limit(SPRITE_SIZE)
@@ -93,6 +94,8 @@
     struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position);
     struct Vector2uis rasterPositionToCharGridPosition(const struct Vector2ui rasterPosition);
     struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
+    struct Vector2ui rasterPositionToSpritePosition(const struct Vector2uis rasterPosition);
+    struct Vector2uis spritePositionToRasterPosition(const struct Vector2ui spritePosition);
     void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary);
     void setSpriteColor(const uint8_t spriteNr, uint8_t color);
     void enableSprite(const uint8_t spriteNr);
@@ -125,4 +128,5 @@
     void placeHighResBitmapMultiTile(volatile unsigned char *bitmapPointer, volatile unsigned char *screenRamPointer, struct HighResBitmapMultiTile tiles, const struct Vector2uis gridCell);
     void setBorderColor(const uint8_t color);
     void setBackgroundColor(const uint8_t color);
+    
 #endif
