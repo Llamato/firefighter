@@ -5,6 +5,7 @@
 #include "glibs64c/graphics.h"
 #include "glibs64c/hardware/sid.h"
 #include "glibs64c/hardware/timer.h"
+#include "glibs64c/hardware/vic.h"
 
 #define SPRITE_0_BLOCK 252
 #define SPRITE_1_BLOCK 254
@@ -250,52 +251,39 @@ const struct Vector2uis housePositions[] = {
 struct Sprite playerSprite = {
     (struct Vector2ui) {160, 200},
     COLOR_YELLOW,
-    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_BLOCK)),
     true,
     false, 
     false,
+    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_BLOCK))
 };
 
-struct Sprite flameSprites[] = {
+volatile unsigned char* flameAnimationFrames[] = {
+    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_BLOCK)),
+    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_BLOCK))
+};
+
+struct AnimatedSprite flameSprites[] = {
     {
         (struct Vector2ui) {0, 0},
         COLOR_ORANGE,
-        ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_BLOCK)),
         true,
         false,
-        false
+        false,
+        flameAnimationFrames,
+        0,
+        sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     },
     {
-        (struct Vector2ui) {320, 0},
+        (struct Vector2ui) {0, 0},
         COLOR_ORANGE,
-        ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_BLOCK)),
         true,
         false,
-        false
+        false,
+        flameAnimationFrames,
+        1,
+        sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     }
 };
-
-void bindSprite(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct Sprite* spriteStruct) {
-    enableSprite(spriteNr);
-    setSpriteColor(spriteNr, spriteStruct->color);
-    setSpriteBitmapPointer(spriteNr, bitmapBlock);
-    positionSprite(spriteNr, spriteStruct->position);
-    if(spriteStruct->isMulticolor) {
-        enableSpriteMulticolorMode(spriteNr);
-    } else {
-        disableSpriteMulticolorMode(spriteNr);
-    }
-    if(spriteStruct->isDoubleWidth) {
-        enableSpriteDoubleWidth(spriteNr);
-    } else {
-        disableSpriteDoubleWidth(spriteNr);
-    }
-    if(spriteStruct->isDoubleHeight) {
-        enableSpriteDoubleHeight(spriteNr);
-    } else {
-        disableSpriteDoubleHeight(spriteNr);
-    }
-}
 
 void drawLake(const struct Vector2ui center, const uint8_t radius) {
     makeFilledCircleHighResBitmapBresenham(ADDRESS_TO_PTR(BITMAP_RAM), center, radius);
@@ -320,13 +308,13 @@ void placeHouses(const struct Vector2uis* gridPositions, const uint8_t amount) {
     }
 }
 
-struct Sprite* activeflames[HARDWARE_SPRITE_COUNT-1];
+struct AnimatedSprite* activeflames[HARDWARE_SPRITE_COUNT-1];
 void spawnFlame(const struct Vector2ui position) {
     
 }
 
 void flickerFlame(const uint8_t sprite) {
-
+    
 }
 
 volatile uint16_t framecounter = 0;
@@ -352,15 +340,7 @@ int main(void) {
     setSharedMulticolorSpriteColors(COLOR_BROWN, COLOR_LIGHT_GRAY);
     bindSprite(HARDWARE_PLAYER_SPRITE_INDEX, SPRITE_0_BLOCK, &playerSprite);
     copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Template);
-    bindSprite(1, SPRITE_1_BLOCK, &flameSprites[0]);
-    copySpriteBitmap(flameSprites[0].bitmapPtr, (volatile unsigned char*) flameSprite1Template);
-    bindSprite(2, SPRITE_2_BLOCK, &flameSprites[1]);
-    copySpriteBitmap(flameSprites[1].bitmapPtr, (volatile unsigned char*) flameSprite2Template);
-    bindSprite(3, SPRITE_1_BLOCK, &flameSprites[0]);
-    bindSprite(4, SPRITE_2_BLOCK, &flameSprites[1]);
-    bindSprite(5, SPRITE_1_BLOCK, &flameSprites[0]);
-    bindSprite(6, SPRITE_2_BLOCK, &flameSprites[1]);
-    bindSprite(7, SPRITE_1_BLOCK, &flameSprites[0]);
+
 
     //Gameloop
     bool gamerunning = true;
