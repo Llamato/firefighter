@@ -28,6 +28,7 @@
 #define GRASS_BACKGROUND_COLOR COLOR_GREEN
 
 #define HARDWARE_PLAYER_SPRITE_INDEX 0
+#define FLAME_SPRITE_COUNT HARDWARE_SPRITE_COUNT-1
 
 const unsigned char flameSprite1Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = { 
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(0)
@@ -285,6 +286,17 @@ struct AnimatedSprite flameSprites[] = {
     }
 };
 
+const uint8_t spriteBlocks[] = {
+    SPRITE_0_BLOCK,
+    SPRITE_1_BLOCK,
+    SPRITE_2_BLOCK,
+    SPRITE_3_BLOCK,
+    SPRITE_4_BLOCK,
+    SPRITE_5_BLOCK,
+    SPRITE_6_BLOCK,
+    SPRITE_7_BLOCK
+};
+
 void drawLake(const struct Vector2ui center, const uint8_t radius) {
     makeFilledCircleHighResBitmapBresenham(ADDRESS_TO_PTR(BITMAP_RAM), center, radius);
     const struct Vector2ui leftTopCorner = {center.x - radius, center.y - radius};
@@ -308,8 +320,41 @@ void placeHouses(const struct Vector2uis* gridPositions, const uint8_t amount) {
     }
 }
 
-struct AnimatedSprite* activeflames[HARDWARE_SPRITE_COUNT-1];
-void spawnFlame(const struct Vector2ui position) {
+struct AnimatedSprite* activeSprites[FLAME_SPRITE_COUNT];
+struct Vector2ui activeTargets[FLAME_SPRITE_COUNT];
+
+bool isTargetActive(const struct Vector2uis target) {
+    for(uint16_t currentTarget = 0; currentTarget < FLAME_SPRITE_COUNT; currentTarget++) {
+        if(activeTargets[currentTarget].x == target.x && activeTargets[currentTarget].y == target.y) {
+            return true;
+        }
+    }
+    return false;
+}
+
+uint16_t findTargetForFlame(const struct Vector2ui flamePosition, const struct Vector2uis* targets, const uint16_t targetCount) {
+    uint16_t minSum = BITMAP_WIDTH * BITMAP_HEIGHT;
+    uint16_t minTarget = 0;
+    for(uint16_t currentTarget = 0; currentTarget < targetCount; currentTarget++) {
+        const uint16_t currentTargetSum = abs(targets[currentTarget].x - flamePosition.x) + abs(targets[currentTarget].y - flamePosition.y);
+        if(currentTargetSum < minSum && !isTargetActive(targets[currentTarget])) {
+            minSum = currentTargetSum;
+            minTarget = currentTarget;
+        }
+    }
+}
+
+void spawnFlame() {
+    for(uint8_t currentSprite = 0; currentSprite < FLAME_SPRITE_COUNT; currentSprite++) {
+        if(activeTargets[currentSprite].x == 0 && activeTargets[currentSprite].y == 0) {
+            uint16_t target = findTargetForFlame(activeSprites[currentSprite]->position, housePositions, sizeof(housePositions) / sizeof(struct Vector2uis));
+            activeSprites[currentSprite]->position = getVoice3State();
+        }
+
+    }
+}
+
+void despawnFlame(const uint8_t hwSprite) {
     
 }
 
@@ -340,14 +385,19 @@ int main(void) {
     setSharedMulticolorSpriteColors(COLOR_BROWN, COLOR_LIGHT_GRAY);
     bindSprite(HARDWARE_PLAYER_SPRITE_INDEX, SPRITE_0_BLOCK, &playerSprite);
     copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Template);
-
+    const uint8_t flameTemplateCount = sizeof(flameSprites) / sizeof(struct AnimatedSprite);
+    for(uint8_t currentSprite = 0; currentSprite < FLAME_SPRITE_COUNT; currentSprite++) {
+        const uint8_t flameIndex = currentSprite % flameTemplateCount;
+        activeSprites[currentSprite] = &flameSprites[flameIndex];
+        activeTargets[currentSprite] = (struct Vector2ui) {0, 0};
+    }
 
     //Gameloop
     bool gamerunning = true;
     volatile bool flametime = true;
     while (gamerunning) {
         if(flametime) {
-            spawnFlame((struct Vector2ui) {0, framecounter % BITMAP_WIDTH});
+            spawnFlame((struct Vector2ui) {framecounter % BITMAP_WIDTH, 0});
         }
         framecounter++;
     }

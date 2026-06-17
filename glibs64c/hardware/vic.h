@@ -1,5 +1,6 @@
 #ifndef VIC_H
     #include <stdint.h>
+    #include "../gllm/gllm.h"
     #define VIC_H
 
     //Memory mappings
@@ -141,4 +142,4 @@
     void setBorderColor(const uint8_t color);
     void setBackgroundColor(const uint8_t color);
     
-#endif
+    #endif

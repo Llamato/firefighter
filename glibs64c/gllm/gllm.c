@@ -96,6 +96,10 @@ fixed16_t gllmCos(uint8_t angle) {
     return sinTable[shiftedAngle];
 }
 
+int16_t map(int16_t x, int16_t inMin, int16_t inMax, int16_t outMin, int16_t outMax) {
+    return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+}
+
 struct Vector2uis rotate2dVector(const struct Vector2uis vector, const fixed32_t angle) {
     return (struct Vector2uis) {
         vector.x * gllmCos(angle),
