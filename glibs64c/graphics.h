@@ -75,6 +75,21 @@
     #define COLOR_LIGHT_BLUE 14
     #define COLOR_LIGHT_GRAY 15
 
+    struct Sprite {
+        struct Vector2ui position;
+        uint8_t color;
+        volatile unsigned char* bitmapPtr;
+        bool isMulticolor;
+        bool isDoubleWidth;
+        bool isDoubleHeight;
+    };
+
+    struct AnimatedSprite {
+        struct Sprite* frameSprites;
+        uint8_t currentFrame;
+        uint8_t frameCount;
+    };
+
     struct BitmapPosition {
         uint16_t byte;
         uint8_t bit;
@@ -114,6 +129,7 @@
     void mirrorCircleSpriteSegment(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const struct Vector2uis circumfrancePoint);
     void makeCircleSpriteBresenham(volatile unsigned char* bitmapPointer, const struct Vector2uis center, const uint8_t radius);
     void makeLineSpriteBresenham(volatile unsigned char* bitmapPointer, const struct Vector2uis origin, const struct Vector2uis destination);
+    void animateSprite(const uint8_t spriteNr);
     void switchToHighResBitmapMode();
     void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
     void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);

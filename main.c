@@ -1,10 +1,10 @@
 #include <stdint.h>
 #include <stdbool.h>
-#include "common.h"
-#include "gllm/gllm.h"
-#include "graphics.h"
-#include "sid.h"
-#include "timer.h"
+#include "glibs64c/common.h"
+#include "glibs64c/gllm/gllm.h"
+#include "glibs64c/graphics.h"
+#include "glibs64c/hardware/sid.h"
+#include "glibs64c/hardware/timer.h"
 
 #define SPRITE_0_BLOCK 252
 #define SPRITE_1_BLOCK 254
@@ -27,15 +27,6 @@
 #define GRASS_BACKGROUND_COLOR COLOR_GREEN
 
 #define HARDWARE_PLAYER_SPRITE_INDEX 0
-
-struct Sprite {
-    struct Vector2ui position;
-    uint8_t color;
-    volatile unsigned char* bitmapPtr;
-    bool isMulticolor;
-    bool isDoubleWidth;
-    bool isDoubleHeight;
-};
 
 const unsigned char flameSprite1Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = { 
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(0)

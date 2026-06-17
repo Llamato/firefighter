@@ -1,5 +1,5 @@
 #include "sid.h"
-#include "common.h"
+#include "../common.h"
 #include <stdint.h>
 
 struct VoiceState getVoice3State() {
