@@ -10,6 +10,9 @@
     #define SCREEN_COLOR_RAM		0xD800
     #define BITMAP_RAM              0x2000
     #define SPRITES_ENABLE   		0xD015
+    #define SPRITES_MULTICOLOR      0xD01C
+    #define SPRITES_DOUBLE_WIDTH    0xD017
+    #define SPRITES_DOUBLE_HEIGHT   0xD01D
     #define SPRITE_0_PTR     		0x07f8
     #define SPRITE_1_PTR     		0x07f9
     #define SPRITE_2_PTR     		0x07fa
@@ -35,7 +38,6 @@
     #define SPRITE_5_POSITION       0xD00A
     #define SPRITE_6_POSITION       0xD00C
     #define SPRITE_7_POSITION       0xD00E
-    #define SPRITES_X_HIGH 			0xD010
 
     //Hardware limitations
     #define BITS_PER_BYTE 8
@@ -52,6 +54,8 @@
     #define SPRITE_COLUMNS 24
     #define SPRITE_ROWS 21
     #define SPRITE_SIZE 64
+    #define SPRITE_POSITION_X_MAXIMUM 255 * 8 + 24
+    #define SPRITE_POSITION_Y_MAXIMUM 255 * 8 + 50
     #define HARDWARE_SPRITE_COUNT 8
     #define SPRITE_BYTES_PER_ROW SPRITE_COLUMNS / BITS_PER_BYTE
     #define SPRITE_BITMAP_ADDRESS(SPRITE_BLOCK) (SPRITE_BLOCK * SPRITE_SIZE)
@@ -120,12 +124,16 @@
     void setSpriteColor(const uint8_t spriteNr, uint8_t color);
     void enableSprite(const uint8_t spriteNr);
     void disableSprite(const uint8_t spriteNr);
+    bool isSpriteEnabled(const uint8_t spriteNr);
     void enableSpriteMulticolorMode(const uint8_t spriteNr);
     void disableSpriteMulticolorMode(const uint8_t spriteNr);
+    bool isSpriteMulticolor(const uint8_t spriteNr);
     void enableSpriteDoubleWidth(const uint8_t spriteNr);
     void disableSpriteDoubleWidth(const uint8_t spriteNr);
+    bool isSpriteDoubleWidth(const uint8_t spriteNr);
     void enableSpriteDoubleHeight(const uint8_t spriteNr);
     void disableSpriteDoubleHeight(const uint8_t spriteNr);
+    bool isSpriteDoubleHeight(const uint8_t spriteNr);
     void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock);
     void positionSprite(const uint8_t spriteNr, const struct Vector2ui position);
     void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from);

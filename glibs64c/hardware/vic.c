@@ -48,28 +48,44 @@ void disableSprite(const uint8_t spriteNr) {
     *ADDRESS_TO_PTR(SPRITES_ENABLE) &= ~(1<<spriteNr);
 }
 
+bool isSpriteEnabled(const uint8_t spriteNr) {
+    return *ADDRESS_TO_PTR(SPRITES_ENABLE) & (1<<spriteNr);
+}
+
 void enableSpriteMulticolorMode(const uint8_t spriteNr) {
-    *ADDRESS_TO_PTR(0xD01C) |= (1<<spriteNr);
+    *ADDRESS_TO_PTR(SPRITES_MULTICOLOR) |= (1<<spriteNr);
 }
 
 void disableSpriteMulticolorMode(const uint8_t spriteNr) {
-    *ADDRESS_TO_PTR(0xD01C) &= ~(1<<spriteNr);
+    *ADDRESS_TO_PTR(SPRITES_MULTICOLOR) &= ~(1<<spriteNr);
+}
+
+bool isSpriteMulticolor(const uint8_t spriteNr) {
+    return *ADDRESS_TO_PTR(SPRITES_MULTICOLOR) & (1<<spriteNr);
 }
 
 void enableSpriteDoubleWidth(const uint8_t spriteNr) {
-    *ADDRESS_TO_PTR(0xD017) |= (1<<spriteNr);
+    *ADDRESS_TO_PTR(SPRITES_DOUBLE_WIDTH) |= (1<<spriteNr);
 }
 
 void disableSpriteDoubleWidth(const uint8_t spriteNr) {
-    *ADDRESS_TO_PTR(0xD017) &= ~(1<<spriteNr);
+    *ADDRESS_TO_PTR(SPRITES_DOUBLE_WIDTH) &= ~(1<<spriteNr);
+}
+
+bool isSpriteDoubleWidth(const uint8_t spriteNr) {
+    return *ADDRESS_TO_PTR(SPRITES_DOUBLE_WIDTH) & (1<<spriteNr);
 }
 
 void enableSpriteDoubleHeight(const uint8_t spriteNr) {
-    *ADDRESS_TO_PTR(0xD01D) |= (1<<spriteNr);
+    *ADDRESS_TO_PTR(SPRITES_DOUBLE_HEIGHT) |= (1<<spriteNr);
 }
 
 void disableSpriteDoubleHeight(const uint8_t spriteNr) {
-    *ADDRESS_TO_PTR(0xD01D) &= ~(1<<spriteNr);
+    *ADDRESS_TO_PTR(SPRITES_DOUBLE_HEIGHT) &= ~(1<<spriteNr);
+}
+
+bool isSpriteDoubleHeight(const uint8_t spriteNr) {
+    return *ADDRESS_TO_PTR(SPRITES_DOUBLE_HEIGHT) & (1<<spriteNr);
 }
 
 void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock) {

@@ -19,11 +19,13 @@
     #define TIMER_CONTROL_REGISTER_FORCE_LOAD_BIT 3
     #define TIMER_CONTROL_REGISTER_RUN_MODE_BIT 4
 
+    uint16_t getCurrentTimerValue(volatile unsigned char* ciaBase, uint8_t timer);
     void startTimer(volatile unsigned char* ciaBase, uint8_t timer);
     void stopTimer(volatile unsigned char* ciaBase, uint8_t timer);
-    uint16_t getCurrentTimerValue(volatile unsigned char* ciaBase, uint8_t timer);
     void setTimerLatch(volatile unsigned char* ciaBase, uint8_t timer, uint16_t value);
     void reloadLatchIntoTimer(volatile unsigned char* ciaBase, uint8_t timer);
+    void setTimerRunModeOneshot(volatile unsigned char* ciaBase, uint8_t timer);
+    void setTimerRunModeContinues(volatile unsigned char* ciaBase, uint8_t timer);
     void enableTimerInterrupt(volatile unsigned char* ciaBase, uint8_t timer);
     void disableTimerinterrupt(volatile unsigned char* ciaBase, uint8_t timer);
     

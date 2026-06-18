@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include "glibs64c/common.h"
 #include "glibs64c/gllm/gllm.h"
 #include "glibs64c/graphics.h"
@@ -320,7 +321,6 @@ void placeHouses(const struct Vector2uis* gridPositions, const uint8_t amount) {
     }
 }
 
-struct AnimatedSprite* activeSprites[FLAME_SPRITE_COUNT];
 struct Vector2ui activeTargets[FLAME_SPRITE_COUNT];
 
 bool isTargetActive(const struct Vector2uis target) {
@@ -333,7 +333,7 @@ bool isTargetActive(const struct Vector2uis target) {
 }
 
 uint16_t findTargetForFlame(const struct Vector2ui flamePosition, const struct Vector2uis* targets, const uint16_t targetCount) {
-    uint16_t minSum = BITMAP_WIDTH * BITMAP_HEIGHT;
+    uint16_t minSum = BITMAP_WIDTH + BITMAP_HEIGHT;
     uint16_t minTarget = 0;
     for(uint16_t currentTarget = 0; currentTarget < targetCount; currentTarget++) {
         const uint16_t currentTargetSum = abs(targets[currentTarget].x - flamePosition.x) + abs(targets[currentTarget].y - flamePosition.y);
@@ -342,15 +342,18 @@ uint16_t findTargetForFlame(const struct Vector2ui flamePosition, const struct V
             minTarget = currentTarget;
         }
     }
+    return minSum;
 }
 
 void spawnFlame() {
-    for(uint8_t currentSprite = 0; currentSprite < FLAME_SPRITE_COUNT; currentSprite++) {
+    for(uint8_t currentSprite = 1; currentSprite < HARDWARE_SPRITE_COUNT; currentSprite++) {
         if(activeTargets[currentSprite].x == 0 && activeTargets[currentSprite].y == 0) {
-            uint16_t target = findTargetForFlame(activeSprites[currentSprite]->position, housePositions, sizeof(housePositions) / sizeof(struct Vector2uis));
-            activeSprites[currentSprite]->position = getVoice3State();
+            struct Vector2ui initialFlamePosition = {gllmMap(getVoice3Feqency(), 0, UINT8_MAX, 0, SPRITE_POSITION_X_MAXIMUM), 0};
+            initialFlamePosition.y = 100; //Debug!!!
+            uint16_t target = findTargetForFlame(initialFlamePosition, housePositions, sizeof(housePositions) / sizeof(struct Vector2uis));
+            positionSprite(currentSprite, initialFlamePosition); //Potential optimisation limit spawn range to 0-256
+            enableSprite(currentSprite);
         }
-
     }
 }
 
@@ -369,7 +372,7 @@ int main(void) {
 
     //Init timer
     setTimerLatch(ADDRESS_TO_PTR(CIA1_BASE_ADDRESS), TIMERA_INDEX, 0xff);
-
+    
     //Init screen
     setBorderColor(COLOR_BLACK);
     switchToHighResBitmapMode();
@@ -388,7 +391,6 @@ int main(void) {
     const uint8_t flameTemplateCount = sizeof(flameSprites) / sizeof(struct AnimatedSprite);
     for(uint8_t currentSprite = 0; currentSprite < FLAME_SPRITE_COUNT; currentSprite++) {
         const uint8_t flameIndex = currentSprite % flameTemplateCount;
-        activeSprites[currentSprite] = &flameSprites[flameIndex];
         activeTargets[currentSprite] = (struct Vector2ui) {0, 0};
     }
 
@@ -397,7 +399,9 @@ int main(void) {
     volatile bool flametime = true;
     while (gamerunning) {
         if(flametime) {
-            spawnFlame((struct Vector2ui) {framecounter % BITMAP_WIDTH, 0});
+            spawnFlame();
+            flametime = false;
+            setTimerLatch(ADDRESS_TO_PTR(CIA1_BASE_ADDRESS), TIMERA_INDEX, 0xff);
         }
         framecounter++;
     }

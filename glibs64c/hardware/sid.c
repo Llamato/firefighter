@@ -2,6 +2,14 @@
 #include "../common.h"
 #include <stdint.h>
 
+uint16_t getVoice3Feqency() {
+    return *ADDRESS_TO_PTR(SID_VOICE3FEQLOW_ADDRESS);
+}
+
+uint8_t getVoice3ControlRegisterState() {
+    return *ADDRESS_TO_PTR(SID_VOICE3CONTROL_ADDRESS);
+}
+
 struct VoiceState getVoice3State() {
     return (struct VoiceState) {*ADDRESS_TO_PTR(SID_VOICE3FEQLOW_ADDRESS), *ADDRESS_TO_PTR(SID_VOICE3CONTROL_ADDRESS)};
 }

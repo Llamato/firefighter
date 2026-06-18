@@ -10,6 +10,8 @@
         uint8_t controlRegister;
     };
 
+    uint16_t getVoice3Feqency();
+    uint8_t getVoice3ControlRegisterState();
     struct VoiceState getVoice3State();
     void setVoiceState(struct VoiceState state);
     struct VoiceState initNoiseVoiceRnd(uint16_t maxValue);
