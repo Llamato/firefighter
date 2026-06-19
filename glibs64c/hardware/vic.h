@@ -80,22 +80,38 @@
     #define COLOR_LIGHT_GRAY 15
 
     struct Sprite {
-        struct Vector2ui position;
         uint8_t color;
         bool isMulticolor;
         bool isDoubleWidth;
         bool isDoubleHeight;
+        struct Vector2ui position;
         volatile unsigned char* bitmapPtr;
     };
 
-    struct AnimatedSprite {
-        struct Vector2ui position;
+    struct SpriteTemplate {
         uint8_t color;
         bool isMulticolor;
         bool isDoubleWidth;
         bool isDoubleHeight;
-        volatile unsigned char** bitmapPtrs;
+    };
+
+    struct AnimatedSprite {
+        uint8_t color;
+        bool isMulticolor;
+        bool isDoubleWidth;
+        bool isDoubleHeight;
+        volatile unsigned char** frameBitmaps;
+        uint8_t frameCount;
         uint8_t currentFrame;
+        struct Vector2ui position;
+    };
+
+    struct AnimatedSpriteTemplate {
+        uint8_t color;
+        bool isMulticolor;
+        bool isDoubleWidth;
+        bool isDoubleHeight;
+        volatile unsigned char** frameBitmaps;
         uint8_t frameCount;
     };
 
@@ -139,14 +155,13 @@
     void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from);
     void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
-    void bindSprite(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct Sprite* spriteStruct);
+    void applySpriteTemplate(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct SpriteTemplate* spriteTemplate);
     void animateSprite(const uint8_t spriteNr);
     void switchToHighResBitmapMode();
     void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
     void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
     void copyTile(volatile unsigned char* to, volatile unsigned char* from);
     void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell);
-    void placeHighResBitmapMultiTile(volatile unsigned char *bitmapPointer, volatile unsigned char *screenRamPointer, struct HighResBitmapMultiTile tiles, const struct Vector2uis gridCell);
     void setBorderColor(const uint8_t color);
     void setBackgroundColor(const uint8_t color);
     

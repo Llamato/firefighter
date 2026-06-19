@@ -102,7 +102,7 @@ void positionSprite(const uint8_t spriteNr, const struct Vector2ui position) {
     } else {
         *ADDRESS_TO_PTR(SPRITES_X_HIGH) &= ~(1 << spriteNr);
     }
-    volatile unsigned char* spriteYpositionRegisterAddress = spriteXlowPositionRegisterAddress+1;
+    volatile unsigned char* spriteYpositionRegisterAddress = spriteXlowPositionRegisterAddress + 1;
     *spriteYpositionRegisterAddress = position.y;
 }
 
@@ -122,22 +122,20 @@ void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector
     bitmapPointer[bitmapPosition.byte] &= ~(1 << ((BITS_PER_BYTE -1) - bitmapPosition.bit));
 }
 
-void bindSprite(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct Sprite* spriteStruct) {
-    enableSprite(spriteNr);
-    setSpriteColor(spriteNr, spriteStruct->color);
+void applySpriteTemplate(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct SpriteTemplate* spriteTemplate) {
+    setSpriteColor(spriteNr, spriteTemplate->color);
     setSpriteBitmapPointer(spriteNr, bitmapBlock);
-    positionSprite(spriteNr, spriteStruct->position);
-    if(spriteStruct->isMulticolor) {
+    if(spriteTemplate->isMulticolor) {
         enableSpriteMulticolorMode(spriteNr);
     } else {
         disableSpriteMulticolorMode(spriteNr);
     }
-    if(spriteStruct->isDoubleWidth) {
+    if(spriteTemplate->isDoubleWidth) {
         enableSpriteDoubleWidth(spriteNr);
     } else {
         disableSpriteDoubleWidth(spriteNr);
     }
-    if(spriteStruct->isDoubleHeight) {
+    if(spriteTemplate->isDoubleHeight) {
         enableSpriteDoubleHeight(spriteNr);
     } else {
         disableSpriteDoubleHeight(spriteNr);
@@ -160,15 +158,6 @@ void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsi
         bitmapPointer[gridIndex * BYTES_PER_CHAR_BITMAP + currentRow] = tile.bitmapData[currentRow];
     }
      screenRamPointer[gridIndex] = tile.colors;
-}
-
-void placeHighResBitmapMultiTile(volatile unsigned char *bitmapPointer, volatile unsigned char *screenRamPointer, struct HighResBitmapMultiTile tiles, const struct Vector2uis gridCell) {
-    for(uint8_t currentRow = gridCell.x; currentRow < tiles.height; currentRow++) {
-        for(uint8_t currentColumn = gridCell.y; currentColumn < tiles.width; currentColumn++) {
-            //placeHighResBitmapMultiTile(bitmapPointer + currentRow * TEXT_SCREEN_COLUMNS * BYTES_PER_CHAR_BITMAP + currentColumn * BYTES_PER_CHAR_BITMAP, screenRamPointer)
-
-        }
-    }
 }
 
 void setBorderColor(uint8_t color) {

@@ -30,32 +30,33 @@
 
 #define HARDWARE_PLAYER_SPRITE_INDEX 0
 #define FLAME_SPRITE_COUNT HARDWARE_SPRITE_COUNT-1
+#define FLAME_SPEED_GATE 0x1fff
 
-const unsigned char flameSprite1Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = { 
+const unsigned char flameSprite1Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = { 
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(0)
 };
 
-const unsigned char flameSprite2Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
+const unsigned char flameSprite2Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(1)
 };
 
-const unsigned char playerSprite1Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
+const unsigned char playerSprite1Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(10)
 };
 
-const unsigned char playerSprite2Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
+const unsigned char playerSprite2Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(11)
 };
 
-const unsigned char playerSprite3Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
+const unsigned char playerSprite3Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(12)
 };
 
-const unsigned char playerSprite4Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
+const unsigned char playerSprite4Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(13)
 };
 
-const unsigned char playerSprite5Template[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
+const unsigned char playerSprite5Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = {
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(14)
 };
 
@@ -63,15 +64,15 @@ const unsigned char playerSprite6Template[SPRITE_SIZE] /*__attribute__((aligned(
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(15)
 };
 
-const unsigned char grassTile1Template[BYTES_PER_CHAR_BITMAP] /*__attribute__((aligned(BYTES_PER_CHAR_BITMAP)))*/ = {
+const unsigned char grassTile1Bitmap[BYTES_PER_CHAR_BITMAP] /*__attribute__((aligned(BYTES_PER_CHAR_BITMAP)))*/ = {
     #embed "assets/background.art" TILE_EMBED_PARAMS(0)
 };
 
-const unsigned char grassTile2Template[BYTES_PER_CHAR_BITMAP] /*__attribute__((aligned(BYTES_PER_CHAR_BITMAP)))*/ = {
+const unsigned char grassTile2Bitmap[BYTES_PER_CHAR_BITMAP] /*__attribute__((aligned(BYTES_PER_CHAR_BITMAP)))*/ = {
     #embed "assets/background.art" TILE_EMBED_PARAMS(1)
 };
 
-const unsigned char grassTile3Template[BYTES_PER_CHAR_BITMAP] /*__attribute__((aligned(BYTES_PER_CHAR_BITMAP)))*/ = {
+const unsigned char grassTile3Bitmap[BYTES_PER_CHAR_BITMAP] /*__attribute__((aligned(BYTES_PER_CHAR_BITMAP)))*/ = {
     #embed "assets/background.art" TILE_EMBED_PARAMS(2)
 };
 
@@ -85,15 +86,15 @@ const unsigned char lowerHouseTileTemplate[BYTES_PER_CHAR_BITMAP * HOUSE_TILE_WI
 
 const struct HighResBitmapTile grassTiles[] = {
     {
-        (volatile unsigned char*)grassTile1Template,
+        (volatile unsigned char*)grassTile1Bitmap,
         (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
     },
     {
-        (volatile unsigned char*)grassTile2Template,
+        (volatile unsigned char*)grassTile2Bitmap,
         (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
     },
     {
-        (volatile unsigned char*)grassTile3Template,
+        (volatile unsigned char*)grassTile3Bitmap,
         (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
     }
 };
@@ -251,52 +252,39 @@ const struct Vector2uis housePositions[] = {
 };
 
 struct Sprite playerSprite = {
-    (struct Vector2ui) {160, 200},
     COLOR_YELLOW,
     true,
     false, 
     false,
+    (struct Vector2ui) {160, 200},
     ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_BLOCK))
 };
 
 volatile unsigned char* flameAnimationFrames[] = {
-    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_0_BLOCK)),
-    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_BLOCK))
+    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_1_BLOCK)),
+    ADDRESS_TO_PTR(SPRITE_BITMAP_ADDRESS(SPRITE_2_BLOCK))
 };
 
-struct AnimatedSprite flameSprites[] = {
+struct AnimatedSpriteTemplate flameSpriteTemplates[] = {
     {
-        (struct Vector2ui) {0, 0},
         COLOR_ORANGE,
         true,
         false,
         false,
         flameAnimationFrames,
-        0,
         sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     },
     {
-        (struct Vector2ui) {0, 0},
         COLOR_ORANGE,
         true,
         false,
         false,
         flameAnimationFrames,
-        1,
         sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     }
 };
 
-const uint8_t spriteBlocks[] = {
-    SPRITE_0_BLOCK,
-    SPRITE_1_BLOCK,
-    SPRITE_2_BLOCK,
-    SPRITE_3_BLOCK,
-    SPRITE_4_BLOCK,
-    SPRITE_5_BLOCK,
-    SPRITE_6_BLOCK,
-    SPRITE_7_BLOCK
-};
+struct Vector2ui activeTargets[HARDWARE_SPRITE_COUNT];
 
 void drawLake(const struct Vector2ui center, const uint8_t radius) {
     makeFilledCircleHighResBitmapBresenham(ADDRESS_TO_PTR(BITMAP_RAM), center, radius);
@@ -321,8 +309,6 @@ void placeHouses(const struct Vector2uis* gridPositions, const uint8_t amount) {
     }
 }
 
-struct Vector2ui activeTargets[FLAME_SPRITE_COUNT];
-
 bool isTargetActive(const struct Vector2uis target) {
     for(uint16_t currentTarget = 0; currentTarget < FLAME_SPRITE_COUNT; currentTarget++) {
         if(activeTargets[currentTarget].x == target.x && activeTargets[currentTarget].y == target.y) {
@@ -336,7 +322,7 @@ uint16_t findTargetForFlame(const struct Vector2ui flamePosition, const struct V
     uint16_t minSum = BITMAP_WIDTH + BITMAP_HEIGHT;
     uint16_t minTarget = 0;
     for(uint16_t currentTarget = 0; currentTarget < targetCount; currentTarget++) {
-        const uint16_t currentTargetSum = abs(targets[currentTarget].x - flamePosition.x) + abs(targets[currentTarget].y - flamePosition.y);
+        const uint16_t currentTargetSum = abs((int16_t)(targets[currentTarget].x - flamePosition.x)) + abs((int16_t)(targets[currentTarget].y - flamePosition.y));
         if(currentTargetSum < minSum && !isTargetActive(targets[currentTarget])) {
             minSum = currentTargetSum;
             minTarget = currentTarget;
@@ -361,11 +347,17 @@ void despawnFlame(const uint8_t hwSprite) {
     
 }
 
-void flickerFlame(const uint8_t sprite) {
-    
+void flickerFlames() {
+    uint8_t temp = *ADDRESS_TO_PTR(SPRITE_1_PTR);
+    *ADDRESS_TO_PTR(SPRITE_1_PTR) = *ADDRESS_TO_PTR(SPRITE_2_PTR);
+    *ADDRESS_TO_PTR(SPRITE_2_PTR) = *ADDRESS_TO_PTR(SPRITE_3_PTR);
+    *ADDRESS_TO_PTR(SPRITE_3_PTR) = *ADDRESS_TO_PTR(SPRITE_4_PTR);
+    *ADDRESS_TO_PTR(SPRITE_4_PTR) = *ADDRESS_TO_PTR(SPRITE_5_PTR);
+    *ADDRESS_TO_PTR(SPRITE_5_PTR) = *ADDRESS_TO_PTR(SPRITE_6_PTR);
+    *ADDRESS_TO_PTR(SPRITE_6_PTR) = *ADDRESS_TO_PTR(SPRITE_7_PTR);
+    *ADDRESS_TO_PTR(SPRITE_7_PTR) = temp;
 }
 
-volatile uint16_t framecounter = 0;
 int main(void) {
     //Init sid
     initNoiseVoiceRnd(UINT16_MAX);
@@ -386,22 +378,34 @@ int main(void) {
 
     //Init sprites
     setSharedMulticolorSpriteColors(COLOR_BROWN, COLOR_LIGHT_GRAY);
-    bindSprite(HARDWARE_PLAYER_SPRITE_INDEX, SPRITE_0_BLOCK, &playerSprite);
-    copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Template);
-    const uint8_t flameTemplateCount = sizeof(flameSprites) / sizeof(struct AnimatedSprite);
-    for(uint8_t currentSprite = 0; currentSprite < FLAME_SPRITE_COUNT; currentSprite++) {
-        const uint8_t flameIndex = currentSprite % flameTemplateCount;
-        activeTargets[currentSprite] = (struct Vector2ui) {0, 0};
+    enableSprite(HARDWARE_PLAYER_SPRITE_INDEX);
+    applySpriteTemplate(HARDWARE_PLAYER_SPRITE_INDEX, SPRITE_0_BLOCK, (const struct SpriteTemplate*) &playerSprite);
+    copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Bitmap);
+    positionSprite(HARDWARE_PLAYER_SPRITE_INDEX, playerSprite.position);
+    copySpriteBitmap(flameAnimationFrames[0], (volatile unsigned char*) flameSprite1Bitmap);
+    copySpriteBitmap(flameAnimationFrames[1], (volatile unsigned char*) flameSprite2Bitmap);
+    struct Vector2ui initialFlamePosition = {50, 100}; //Debug!!!
+    for(uint8_t currentSprite = 1; currentSprite < HARDWARE_SPRITE_COUNT; currentSprite++) {
+        uint8_t odd = currentSprite & 1;
+        enableSprite(currentSprite);
+        applySpriteTemplate(currentSprite, odd ? SPRITE_1_BLOCK : SPRITE_2_BLOCK, (struct SpriteTemplate*) &flameSpriteTemplates[odd]);
+        positionSprite(currentSprite, initialFlamePosition);
+        initialFlamePosition.x += 45; //Debug!!!
     }
 
+    *ADDRESS_TO_PTR(SPRITES_ENABLE) = 0xff;
+
     //Gameloop
+    bool flametime;
     bool gamerunning = true;
-    volatile bool flametime = true;
+    uint32_t framecounter = 0;
     while (gamerunning) {
+        flametime = (framecounter & FLAME_SPEED_GATE) == 0;
         if(flametime) {
-            spawnFlame();
+            //spawnFlame();
             flametime = false;
-            setTimerLatch(ADDRESS_TO_PTR(CIA1_BASE_ADDRESS), TIMERA_INDEX, 0xff);
+            flickerFlames();
+            //setTimerLatch(ADDRESS_TO_PTR(CIA1_BASE_ADDRESS), TIMERA_INDEX, 0xff);
         }
         framecounter++;
     }
