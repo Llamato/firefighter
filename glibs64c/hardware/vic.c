@@ -98,7 +98,11 @@ bool isSpriteDoubleHeight(const uint8_t spriteNr) {
     return *ADDRESS_TO_PTR(SPRITES_DOUBLE_HEIGHT) & (1<<spriteNr);
 }
 
-void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock) {
+uint8_t getSpriteBitmapBlock(const uint8_t spriteNr) {
+    return *ADDRESS_TO_PTR(SPRITE_0_PTR + spriteNr);
+}
+
+void setSpriteBitmapBlock(const uint8_t spriteNr, const uint8_t bitmapBlock) {
     *ADDRESS_TO_PTR(SPRITE_0_PTR + spriteNr) = bitmapBlock;
 }
 
@@ -144,7 +148,7 @@ void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector
 
 void applySpriteTemplate(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct SpriteTemplate* spriteTemplate) {
     setSpriteColor(spriteNr, spriteTemplate->color);
-    setSpriteBitmapPointer(spriteNr, bitmapBlock);
+    setSpriteBitmapBlock(spriteNr, bitmapBlock);
     if(spriteTemplate->isMulticolor) {
         enableSpriteMulticolorMode(spriteNr);
     } else {
@@ -181,11 +185,11 @@ void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsi
 }
 
 void setBorderColor(uint8_t color) {
-    *ADDRESS_TO_PTR(0xD020) = color;
+    *ADDRESS_TO_PTR(VIC_BORDER_COLOR) = color;
 }
 
 void setBackgroundColor(uint8_t color) {
-    *ADDRESS_TO_PTR(0xD021) = color;
+    *ADDRESS_TO_PTR(VIC_BACKGROUND_COLOR) = color;
 }
 
 void switchToHighResBitmapMode() {

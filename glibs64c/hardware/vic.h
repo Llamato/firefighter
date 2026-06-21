@@ -150,19 +150,20 @@
     void enableSpriteDoubleHeight(const uint8_t spriteNr);
     void disableSpriteDoubleHeight(const uint8_t spriteNr);
     bool isSpriteDoubleHeight(const uint8_t spriteNr);
-    void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock);
+    uint8_t getSpriteBitmapBlock(const uint8_t spriteNr);
+    void setSpriteBitmapBlock(const uint8_t spriteNr, const uint8_t bitmapBlock);
     struct Vector2ui getSpritePosition(const uint8_t spriteNr);
     void setSpritePosition(const uint8_t spriteNr, const struct Vector2ui position);
     void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from);
     void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void applySpriteTemplate(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct SpriteTemplate* spriteTemplate);
-    void animateSprite(const uint8_t spriteNr);
+    void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Vector2ui topLeftCorner, const struct Vector2ui bottomRightCorner, const uint8_t foregroundColor, const uint8_t backgroundColor);
+    void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell);
     void switchToHighResBitmapMode();
     void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
     void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
     void copyTile(volatile unsigned char* to, volatile unsigned char* from);
-    void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell);
     void setBorderColor(const uint8_t color);
     void setBackgroundColor(const uint8_t color);
     
