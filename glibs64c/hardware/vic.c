@@ -31,6 +31,16 @@ struct Vector2uis spritePositionToRasterPosition(const struct Vector2ui spritePo
     return (struct Vector2uis) {(spritePosition.x - 24) / 8, (spritePosition.y - 50) / 8};
 }
 
+struct Vector2ui charGridPositionToRasterPosition(const struct Vector2ui gridPosition) {
+    return (struct Vector2ui) {gridPosition.x * BITS_PER_BYTE, gridPosition.y * BITS_PER_BYTE};
+}
+
+struct Vector2ui charGridPositionToSpritePosition(const struct Vector2uis gridPosition) {
+    const struct Vector2ui rasterPosition = {gridPosition.x * BITS_PER_BYTE, gridPosition.y * BITS_PER_BYTE};
+    const struct Vector2ui spritePosition = {rasterPosition.x * 8 + 24, rasterPosition.y * 8 + 50};
+    return spritePosition;
+}
+
 void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary) {
     *ADDRESS_TO_PTR(0xD025) = primery;
     *ADDRESS_TO_PTR(0xD026) = secondary;
@@ -92,7 +102,17 @@ void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock) {
     *ADDRESS_TO_PTR(SPRITE_0_PTR + spriteNr) = bitmapBlock;
 }
 
-void positionSprite(const uint8_t spriteNr, const struct Vector2ui position) {
+struct Vector2ui getSpritePosition(const uint8_t spriteNr) {
+    struct Vector2ui position;
+    volatile unsigned char* spriteXlowPositionRegisterAddress = ADDRESS_TO_PTR(SPRITE_0_POSITION + spriteNr * 2);
+    volatile unsigned char* spriteYpositionRegisterAddress = spriteXlowPositionRegisterAddress + 1;
+    position.x = *spriteXlowPositionRegisterAddress;
+    position.x |= *ADDRESS_TO_PTR(SPRITES_X_HIGH) & (1 << spriteNr);
+    position.y = *spriteYpositionRegisterAddress;
+    return position;
+}
+
+void setSpritePosition(const uint8_t spriteNr, const struct Vector2ui position) {
     volatile unsigned char* spriteXlowPositionRegisterAddress = ADDRESS_TO_PTR(SPRITE_0_POSITION + spriteNr * 2);
     const uint8_t positionXlow = position.x & 0xff;
     const bool positionXhigh = position.x > UINT8_MAX;

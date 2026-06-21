@@ -54,8 +54,6 @@
     #define SPRITE_COLUMNS 24
     #define SPRITE_ROWS 21
     #define SPRITE_SIZE 64
-    #define SPRITE_POSITION_X_MAXIMUM 255 * 8 + 24
-    #define SPRITE_POSITION_Y_MAXIMUM 255 * 8 + 50
     #define HARDWARE_SPRITE_COUNT 8
     #define SPRITE_BYTES_PER_ROW SPRITE_COLUMNS / BITS_PER_BYTE
     #define SPRITE_BITMAP_ADDRESS(SPRITE_BLOCK) (SPRITE_BLOCK * SPRITE_SIZE)
@@ -136,6 +134,8 @@
     struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
     struct Vector2ui rasterPositionToSpritePosition(const struct Vector2uis rasterPosition);
     struct Vector2uis spritePositionToRasterPosition(const struct Vector2ui spritePosition);
+    struct Vector2ui charGridPositionToRasterPosition(const struct Vector2ui gridPosition);
+    struct Vector2ui charGridPositionToSpritePosition(const struct Vector2uis gridPosition);
     void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary);
     void setSpriteColor(const uint8_t spriteNr, uint8_t color);
     void enableSprite(const uint8_t spriteNr);
@@ -151,7 +151,8 @@
     void disableSpriteDoubleHeight(const uint8_t spriteNr);
     bool isSpriteDoubleHeight(const uint8_t spriteNr);
     void setSpriteBitmapPointer(const uint8_t spriteNr, const uint8_t bitmapBlock);
-    void positionSprite(const uint8_t spriteNr, const struct Vector2ui position);
+    struct Vector2ui getSpritePosition(const uint8_t spriteNr);
+    void setSpritePosition(const uint8_t spriteNr, const struct Vector2ui position);
     void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from);
     void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);

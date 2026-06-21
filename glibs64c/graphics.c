@@ -160,3 +160,35 @@ void makeFilledCircleHighResBitmapBresenham(volatile unsigned char* bitmapPointe
         fillCircleHighResBitmapSegment(bitmapPointer, center, circumfrancePoint);
     }
 }
+
+uint16_t getLinePixelCoordinatesBresenham(struct Vector2ui* coordinates, const struct Vector2ui origin, const struct Vector2ui destination) {
+    int16_t x0 = origin.x;
+    int16_t y0 = origin.y;
+    int16_t x1 = destination.x;
+    int16_t y1 = destination.y;
+    int16_t dx = abs(x1 - x0);
+    int16_t dy = abs(y1 - y0);
+    int16_t sx = (x0 < x1) ? 1 : -1;
+    int16_t sy = (y0 < y1) ? 1 : -1;
+    int16_t err = dx - dy;
+    int16_t x = x0;
+    int16_t y = y0;
+    uint16_t currentPoint = 0;
+    while(1) {
+        if (x >= 0 && x < BITMAP_WIDTH && y >= 0 && y < BITMAP_HEIGHT) {
+            coordinates[currentPoint] = (struct Vector2ui) {x, y};
+            currentPoint++;
+        }
+        if (x == x1 && y == y1) break;
+        int16_t e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y += sy;
+        }
+    }
+    return currentPoint;
+}

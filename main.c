@@ -30,7 +30,8 @@
 
 #define HARDWARE_PLAYER_SPRITE_INDEX 0
 #define FLAME_SPRITE_COUNT HARDWARE_SPRITE_COUNT-1
-#define FLAME_SPEED_GATE 0x1fff
+#define FLAME_SPEED_GATE 0xffff
+#define LONGEST_FLAME_TO_TARGET_PIXEL_COUNT 378
 
 const unsigned char flameSprite1Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = { 
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(0)
@@ -284,7 +285,7 @@ struct AnimatedSpriteTemplate flameSpriteTemplates[] = {
     }
 };
 
-struct Vector2ui activeTargets[HARDWARE_SPRITE_COUNT];
+struct Vector2ui activeTargets[FLAME_SPRITE_COUNT];
 
 void drawLake(const struct Vector2ui center, const uint8_t radius) {
     makeFilledCircleHighResBitmapBresenham(ADDRESS_TO_PTR(BITMAP_RAM), center, radius);
@@ -328,23 +329,47 @@ uint16_t findTargetForFlame(const struct Vector2ui flamePosition, const struct V
             minTarget = currentTarget;
         }
     }
-    return minSum;
+    return minTarget;
 }
 
-void spawnFlame() {
-    for(uint8_t currentSprite = 1; currentSprite < HARDWARE_SPRITE_COUNT; currentSprite++) {
-        if(activeTargets[currentSprite].x == 0 && activeTargets[currentSprite].y == 0) {
-            struct Vector2ui initialFlamePosition = {gllmMap(getVoice3Feqency(), 0, UINT8_MAX, 0, SPRITE_POSITION_X_MAXIMUM), 0};
-            initialFlamePosition.y = 100; //Debug!!!
-            uint16_t target = findTargetForFlame(initialFlamePosition, housePositions, sizeof(housePositions) / sizeof(struct Vector2uis));
-            positionSprite(currentSprite, initialFlamePosition); //Potential optimisation limit spawn range to 0-256
+struct Vector2ui precomputedPath[LONGEST_FLAME_TO_TARGET_PIXEL_COUNT * FLAME_SPRITE_COUNT];
+uint16_t precomputedPathLengths[FLAME_SPRITE_COUNT];
+uint8_t spawnFlame() {
+    for(uint8_t currentFlame = 0; currentFlame < FLAME_SPRITE_COUNT; currentFlame++) {
+        const uint8_t currentSprite = currentFlame +1;
+        if(activeTargets[currentFlame].x == 0 && activeTargets[currentFlame].y == 0) {
+            struct Vector2ui initialFlamePosition = {gllmMap(getVoice3Feqency(), 0, UINT8_MAX, 0, BITMAP_WIDTH), 0};
+            activeTargets[currentFlame] = charGridPositionToSpritePosition(housePositions[findTargetForFlame(initialFlamePosition, housePositions, sizeof(housePositions) / sizeof(struct Vector2uis))]);
+            const uint16_t currentPathStart = currentFlame * LONGEST_FLAME_TO_TARGET_PIXEL_COUNT;
+            precomputedPathLengths[currentFlame] = getLinePixelCoordinatesBresenham(&precomputedPath[currentPathStart], getSpritePosition(currentSprite), activeTargets[currentFlame]);
             enableSprite(currentSprite);
+            //setSpritePosition(currentSprite, precomputedPath[currentPathStart]);
+
+            //Not working
+            //const uint16_t currentPathEnd = currentPathStart + precomputedPathLengths[currentFlame];
+            //setSpritePosition(currentSprite, precomputedPath[currentPathEnd]);
+            //setSpritePosition(currentSprite, (struct Vector2ui) {100 + currentFlame * 45, 100}); //Debug!!!
+            return currentSprite;
         }
     }
+    return UINT8_MAX;
 }
 
-void despawnFlame(const uint8_t hwSprite) {
-    
+uint16_t currentPositionsAlongPaths[FLAME_SPRITE_COUNT];
+bool moveFlame(const uint8_t flameNr) {
+    const uint8_t spriteNr = flameNr +1;
+    const uint16_t currentPathStart = flameNr * LONGEST_FLAME_TO_TARGET_PIXEL_COUNT;
+    currentPositionsAlongPaths[flameNr]++;
+    setSpritePosition(spriteNr, precomputedPath[currentPathStart + currentPositionsAlongPaths[flameNr]]);
+    return currentPositionsAlongPaths[flameNr] == precomputedPathLengths[flameNr]; //is path completed?
+}
+
+uint8_t despawnFlame(const uint8_t spriteNr) {
+    const uint8_t flameNr = spriteNr -1;
+    setSpritePosition(spriteNr, (struct Vector2ui) {0, 0});
+    currentPositionsAlongPaths[flameNr] = 0;
+    precomputedPathLengths[flameNr] = 0;
+    return flameNr;
 }
 
 void flickerFlames() {
@@ -381,32 +406,43 @@ int main(void) {
     enableSprite(HARDWARE_PLAYER_SPRITE_INDEX);
     applySpriteTemplate(HARDWARE_PLAYER_SPRITE_INDEX, SPRITE_0_BLOCK, (const struct SpriteTemplate*) &playerSprite);
     copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Bitmap);
-    positionSprite(HARDWARE_PLAYER_SPRITE_INDEX, playerSprite.position);
+    setSpritePosition(HARDWARE_PLAYER_SPRITE_INDEX, playerSprite.position);
     copySpriteBitmap(flameAnimationFrames[0], (volatile unsigned char*) flameSprite1Bitmap);
     copySpriteBitmap(flameAnimationFrames[1], (volatile unsigned char*) flameSprite2Bitmap);
-    struct Vector2ui initialFlamePosition = {50, 100}; //Debug!!!
     for(uint8_t currentSprite = 1; currentSprite < HARDWARE_SPRITE_COUNT; currentSprite++) {
         uint8_t odd = currentSprite & 1;
-        enableSprite(currentSprite);
         applySpriteTemplate(currentSprite, odd ? SPRITE_1_BLOCK : SPRITE_2_BLOCK, (struct SpriteTemplate*) &flameSpriteTemplates[odd]);
-        positionSprite(currentSprite, initialFlamePosition);
-        initialFlamePosition.x += 45; //Debug!!!
     }
-
     *ADDRESS_TO_PTR(SPRITES_ENABLE) = 0xff;
 
-    //Gameloop
-    bool flametime;
+    //Final gamestate init
+    bool flameActive[FLAME_SPRITE_COUNT];
+    for(uint8_t currentFlame = 0; currentFlame < FLAME_SPRITE_COUNT; currentFlame++) {
+        flameActive[currentFlame] = false;
+    }
+    bool flametime = true;
     bool gamerunning = true;
     uint32_t framecounter = 0;
+    
+    //Gameloop
     while (gamerunning) {
         flametime = (framecounter & FLAME_SPEED_GATE) == 0;
         if(flametime) {
-            //spawnFlame();
+            *ADDRESS_TO_PTR(VIC_BORDER_COLOR) = 1;
+            if(flameActive[0] == false) {
+                const uint8_t flameIndex = spawnFlame();
+                if(flameIndex != UINT8_MAX) {
+                    flameActive[flameIndex] = true;
+                }
+            }
             flametime = false;
-            flickerFlames();
             //setTimerLatch(ADDRESS_TO_PTR(CIA1_BASE_ADDRESS), TIMERA_INDEX, 0xff);
+            *ADDRESS_TO_PTR(VIC_BORDER_COLOR) = 0;
         }
+        enableSprite(1);
+        //setSpritePosition(1, (struct Vector2ui) {100, 100});
+        //moveFlame(0);
+        flickerFlames();
         framecounter++;
     }
 }
