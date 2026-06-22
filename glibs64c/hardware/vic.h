@@ -54,6 +54,10 @@
     #define SPRITE_COLUMNS 24
     #define SPRITE_ROWS 21
     #define SPRITE_SIZE 64
+    #define SPRITE_SCREEN_LEFT_LIMIT 1
+    #define SPRITE_SCREEN_UPPER_LIMIT 1
+    #define SPRITE_SCREEN_RIGHT_LIMIT BITMAP_WIDTH + 24
+    #define SPRITE_SCREEN_LOWER_LIMIT BITMAP_HEIGHT + 50
     #define HARDWARE_SPRITE_COUNT 8
     #define SPRITE_BYTES_PER_ROW SPRITE_COLUMNS / BITS_PER_BYTE
     #define SPRITE_BITMAP_ADDRESS(SPRITE_BLOCK) (SPRITE_BLOCK * SPRITE_SIZE)
@@ -154,6 +158,7 @@
     void setSpriteBitmapBlock(const uint8_t spriteNr, const uint8_t bitmapBlock);
     struct Vector2ui getSpritePosition(const uint8_t spriteNr);
     void setSpritePosition(const uint8_t spriteNr, const struct Vector2ui position);
+    struct Vector2ui clampSpritePositionToScreen(struct Vector2ui position);
     void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from);
     void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);

@@ -4,8 +4,8 @@
 #include "glibs64c/common.h"
 #include "glibs64c/gllm/gllm.h"
 #include "glibs64c/graphics.h"
+#include "glibs64c/hardware/cia.h"
 #include "glibs64c/hardware/sid.h"
-#include "glibs64c/hardware/timer.h"
 #include "glibs64c/hardware/vic.h"
 
 #define SPRITE_0_BLOCK 252
@@ -308,21 +308,24 @@ void placeHouses(const struct Vector2uis* gridPositions, const uint8_t amount) {
     }
 }
 
-struct Vector2ui targetFlamePositions[FLAME_SPRITE_COUNT];
-struct Vector2ui currentFlamePositions[FLAME_SPRITE_COUNT];
-uint32_t flamelifetime[FLAME_SPRITE_COUNT];
+static struct Vector2ui targetFlamePositions[FLAME_SPRITE_COUNT];
+static struct Vector2ui currentFlamePositions[FLAME_SPRITE_COUNT];
+static uint32_t flameLifetimes[FLAME_SPRITE_COUNT];
+static int8_t flameSpawnPointMovementVelocity = 1;
 void initFlames(){
     const struct Vector2ui zero = {0, 0};
     for(uint8_t currentFlame = 0; currentFlame < FLAME_SPRITE_COUNT; currentFlame++) {
         targetFlamePositions[currentFlame] = zero;
         currentFlamePositions[currentFlame] = zero;
-        flamelifetime[currentFlame] = 1;
+        flameLifetimes[currentFlame] = 1;
     }
 }
 
-void spawnFlame(const uint8_t flameNr) {
+void spawnFlame(const uint8_t flameNr, const struct Vector2ui startPosition, const uint32_t lifetime) {
     const uint8_t spriteNr = flameNr +1;
     targetFlamePositions[flameNr] = (struct Vector2ui) {45 * spriteNr, 28 * spriteNr};
+    currentFlamePositions[flameNr] = startPosition;
+    flameLifetimes[flameNr] = lifetime;
 }
 
 bool moveFlame(const uint8_t flameNr) {
@@ -341,15 +344,18 @@ bool moveFlame(const uint8_t flameNr) {
 }
 
 void despwanFlame(const uint8_t flameNr) {
+    const struct Vector2ui zero = {0, 0};
     const uint8_t spriteNr = flameNr +1;
-    targetFlamePositions[flameNr] = (struct Vector2ui) {0, 0};
-    currentFlamePositions[flameNr] = (struct Vector2ui) {0, 0};
-    setSpritePosition(spriteNr, currentFlamePositions[flameNr]);
+    targetFlamePositions[flameNr] = zero;
+    currentFlamePositions[flameNr] = zero;
 }
 
 void respawnFlame(const uint8_t flameNr) {
-    despwanFlame(flameNr);
-    spawnFlame(flameNr);
+    struct Vector2ui restartingPosition = currentFlamePositions[flameNr];
+    if(restartingPosition.x >= BITMAP_WIDTH) flameSpawnPointMovementVelocity = -1;
+    if(restartingPosition.x <= 0) flameSpawnPointMovementVelocity = 1;
+    restartingPosition.x += flameSpawnPointMovementVelocity;
+    spawnFlame(flameNr, restartingPosition, FLAME_LIFE_TIME);
 }
 
 void flickerFlames() {
@@ -366,9 +372,6 @@ void flickerFlames() {
 int main(void) {
     //Init sid
     initNoiseVoiceRnd(UINT16_MAX);
-
-    //Init timer
-    //setTimerLatch(ADDRESS_TO_PTR(CIA1_BASE_ADDRESS), TIMERA_INDEX, 0xff);
     
     //Init screen
     setBorderColor(COLOR_BLACK);
@@ -402,19 +405,36 @@ int main(void) {
     
     //Gameloop
     while (gamerunning) {
-        bool flameflickertime = (framecounter & FLAME_SPEED_GATE) == 0;
+
+        //Flames
+        const bool flameflickertime = (framecounter & FLAME_SPEED_GATE) == 0;
         if(flameflickertime) flickerFlames();
         for(uint8_t currentFlame = 0; currentFlame < FLAME_SPRITE_COUNT; currentFlame++) {
-            bool isFlameOnTarget = moveFlame(currentFlame);
+            const bool isFlameOnTarget = moveFlame(currentFlame);
             if(isFlameOnTarget) {
-                flamelifetime[currentFlame]--;
+                flameLifetimes[currentFlame]--;
             }
-            if(flamelifetime[currentFlame] == 0) {
-                flamelifetime[currentFlame] = FLAME_LIFE_TIME;
+            if(flameLifetimes[currentFlame] == 0) {
+                flameLifetimes[currentFlame] = FLAME_LIFE_TIME;
                 respawnFlame(currentFlame);
                 break;
             }
         }
+        
+        //Movement
+        const uint8_t joystickState = readJoystick1State() & readJoystick2State();
+        const bool joystickUpPressed = (joystickState & JOYSTICK_UP_MASK) == JOYSTICK_KEY_IS_DOWN;
+        const bool joystickDownPressed = (joystickState & JOYSTICK_DOWN_MASK) == JOYSTICK_KEY_IS_DOWN;
+        const bool joystickLeftPressed = (joystickState & JOYSTICK_LEFT_MASK) == JOYSTICK_KEY_IS_DOWN;
+        const bool joystickRightPressed = (joystickState & JOYSTICK_RIGHT_MASK) == JOYSTICK_KEY_IS_DOWN;
+        const bool joystickFirePressed = (joystickState & JOYSTICK_FIRE_MASK) == JOYSTICK_KEY_IS_DOWN;
+        const struct Vector2is movementVector = {joystickRightPressed - joystickLeftPressed,joystickDownPressed - joystickUpPressed};
+        playerSprite.position.x += movementVector.x;
+        playerSprite.position.y += movementVector.y;
+        playerSprite.position = clampSpritePositionToScreen(playerSprite.position);
+        setSpritePosition(HARDWARE_PLAYER_SPRITE_INDEX, playerSprite.position);
+
+        //On to next frame
         framecounter++;
     }
 }

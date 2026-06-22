@@ -56,6 +56,11 @@ struct Vector2i {
     int16_t y;
 };
 
+struct Vector2is {
+    int8_t x;
+    int8_t y;
+};
+
 struct Vector2ui {
     uint16_t x;
     uint8_t y;

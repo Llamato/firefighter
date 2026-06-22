@@ -130,6 +130,14 @@ void setSpritePosition(const uint8_t spriteNr, const struct Vector2ui position) 
     *spriteYpositionRegisterAddress = position.y;
 }
 
+struct Vector2ui clampSpritePositionToScreen(struct Vector2ui position) {
+    if(position.x < SPRITE_SCREEN_LEFT_LIMIT) position.x = SPRITE_SCREEN_LEFT_LIMIT;
+    if(position.y < SPRITE_SCREEN_UPPER_LIMIT) position.y = SPRITE_SCREEN_UPPER_LIMIT;
+    if(position.x > SPRITE_SCREEN_RIGHT_LIMIT) position.x = SPRITE_SCREEN_RIGHT_LIMIT;
+    if(position.y > SPRITE_SCREEN_LOWER_LIMIT) position.y = SPRITE_SCREEN_LOWER_LIMIT;
+    return position;
+}
+
 void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from) {
 	for(uint16_t currentByte = 0; currentByte < SPRITE_SIZE; currentByte++) {
 		to[currentByte] = from[currentByte];
