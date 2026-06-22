@@ -154,4 +154,6 @@ struct Vector2sf projectSFvector(const struct Vector3sf point);
 struct Vector2lf projectLFvector(const struct Vector3lf point);
 struct Vector2i ndcToScreen(const struct Vector2uis dimensions, const struct Vector2lf ndc);
 
+bool isPointInRectangle(const struct Rectangle2ui rectangle, const struct Vector2uis point);
+
 #endif

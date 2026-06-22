@@ -13,6 +13,8 @@
     #define SPRITES_MULTICOLOR      0xD01C
     #define SPRITES_DOUBLE_WIDTH    0xD017
     #define SPRITES_DOUBLE_HEIGHT   0xD01D
+    #define SPRITES_SPRITE_COLLISION 0xD01E
+    #define SPRITES_BACKGROUND_COLLISION 0xD01F
     #define SPRITE_0_PTR     		0x07f8
     #define SPRITE_1_PTR     		0x07f9
     #define SPRITE_2_PTR     		0x07fa
@@ -164,7 +166,8 @@
     void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void applySpriteTemplate(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct SpriteTemplate* spriteTemplate);
-    void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Vector2ui topLeftCorner, const struct Vector2ui bottomRightCorner, const uint8_t foregroundColor, const uint8_t backgroundColor);
+    bool isSpriteCollidingWithBackground(const uint8_t spriteNr);
+    void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Rectangle2ui rectangle, const uint8_t foregroundColor, const uint8_t backgroundColor);
     void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell);
     void switchToHighResBitmapMode();
     void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);

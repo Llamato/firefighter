@@ -188,3 +188,7 @@ struct Vector2i ndcToScreen(const struct Vector2uis dimensions, const struct Vec
     #endif
     return screenCoordinates;
 }
+
+bool isPointInRectangle(const struct Rectangle2ui rectangle, const struct Vector2uis point) {
+    return point.x >= rectangle.topLeftCorner.x && point.y >= rectangle.topLeftCorner.y && point.x <= rectangle.bottomRightCorner.x && point.y <= rectangle.bottomRightCorner.y;
+}

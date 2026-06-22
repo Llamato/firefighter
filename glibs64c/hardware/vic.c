@@ -164,9 +164,13 @@ void applySpriteTemplate(const uint8_t spriteNr, const uint8_t bitmapBlock, cons
     }
 }
 
-void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Vector2ui topLeftCorner, const struct Vector2ui bottomRightCorner, const uint8_t foregroundColor, const uint8_t backgroundColor) {
-    const struct Vector2uis topLeftGridCell = rasterPositionToCharGridPosition(topLeftCorner);
-    const struct Vector2uis bottomRightGridCell = rasterPositionToCharGridPosition(bottomRightCorner);
+bool isSpriteCollidingWithBackground(const uint8_t spriteNr) {
+    return *ADDRESS_TO_PTR(SPRITES_BACKGROUND_COLLISION) & (1 << spriteNr);
+}
+
+void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Rectangle2ui rectangle, const uint8_t foregroundColor, const uint8_t backgroundColor) {
+    const struct Vector2uis topLeftGridCell = rasterPositionToCharGridPosition(rectangle.topLeftCorner);
+    const struct Vector2uis bottomRightGridCell = rasterPositionToCharGridPosition(rectangle.bottomRightCorner);
     for(uint8_t currentRow = topLeftGridCell.y; currentRow <= bottomRightGridCell.y; currentRow++) {
         for(uint8_t currentColumn = topLeftGridCell.x; currentColumn <= bottomRightGridCell.x; currentColumn++) {
              screenRamPointer[currentRow * TEXT_SCREEN_COLUMNS + currentColumn] = (foregroundColor << BITS_PER_NIBBLE) | backgroundColor;
