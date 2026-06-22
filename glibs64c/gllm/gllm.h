@@ -91,6 +91,11 @@ struct Vector2lf {
     fixed32_t y;
 };
 
+struct Rectangle2ui{
+    struct Vector2ui topLeftCorner;
+    struct Vector2ui bottomRightCorner;
+};
+
 struct Vector3uis {
     uint8_t x;
     uint8_t y;
@@ -148,6 +153,5 @@ struct Vector3lf rotate3dVectorZ(const struct Vector3lf vector, const fixed32_t 
 struct Vector2sf projectSFvector(const struct Vector3sf point);
 struct Vector2lf projectLFvector(const struct Vector3lf point);
 struct Vector2i ndcToScreen(const struct Vector2uis dimensions, const struct Vector2lf ndc);
-
 
 #endif

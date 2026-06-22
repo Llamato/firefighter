@@ -33,6 +33,8 @@
 #define FLAME_SPEED_GATE 0xffff
 #define FLAME_LIFE_TIME 0xffffff
 
+#define GAME_BORDER_COLOR COLOR_BLACK
+
 const unsigned char flameSprite1Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = { 
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(0)
 };
@@ -253,7 +255,7 @@ const struct Vector2uis housePositions[] = {
 };
 
 struct Sprite playerSprite = {
-    COLOR_YELLOW,
+    COLOR_BROWN,
     true,
     false, 
     false,
@@ -284,12 +286,15 @@ struct AnimatedSpriteTemplate flameSpriteTemplates[] = {
         sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     }
 };
-
+static struct Vector2ui leftTopLakeCorner;
+static struct Vector2ui rightBottomLakeCorner;
 void drawLake(const struct Vector2ui center, const uint8_t radius) {
     makeFilledCircleHighResBitmapBresenham(ADDRESS_TO_PTR(BITMAP_RAM), center, radius);
-    const struct Vector2ui leftTopCorner = {center.x - radius, center.y - radius};
-    const struct Vector2ui rightBottomCorner = {center.x + radius, center.y + radius};
-    colorRectangularHighResBitmapRegion(ADDRESS_TO_PTR(SCREEN_RAM),leftTopCorner, rightBottomCorner, COLOR_LIGHT_BLUE, COLOR_GREEN);
+    leftTopLakeCorner.x = center.x - radius;
+    leftTopLakeCorner.y = center.y - radius;
+    rightBottomLakeCorner.x = center.x + radius;
+    rightBottomLakeCorner.y = center.y + radius;
+    colorRectangularHighResBitmapRegion(ADDRESS_TO_PTR(SCREEN_RAM),leftTopLakeCorner, rightBottomLakeCorner, COLOR_LIGHT_BLUE, COLOR_GREEN);
 }
 
 void placeGrass(const struct Vector2uis* gridPositions, const uint16_t amount) { 
@@ -359,7 +364,7 @@ void respawnFlame(const uint8_t flameNr) {
 }
 
 void flickerFlames() {
-    uint8_t temp = *ADDRESS_TO_PTR(SPRITE_1_PTR);
+    const uint8_t temp = *ADDRESS_TO_PTR(SPRITE_1_PTR);
     *ADDRESS_TO_PTR(SPRITE_1_PTR) = *ADDRESS_TO_PTR(SPRITE_2_PTR);
     *ADDRESS_TO_PTR(SPRITE_2_PTR) = *ADDRESS_TO_PTR(SPRITE_3_PTR);
     *ADDRESS_TO_PTR(SPRITE_3_PTR) = *ADDRESS_TO_PTR(SPRITE_4_PTR);
@@ -369,18 +374,45 @@ void flickerFlames() {
     *ADDRESS_TO_PTR(SPRITE_7_PTR) = temp;
 }
 
+struct Vector2ui computeNextPlayerPosition(uint8_t joystickState) {
+    const struct Vector2is movementVector = getMovementVectorFromJoystickState(joystickState);
+    struct Vector2ui nextPosition = {playerSprite.position.x + movementVector.x, playerSprite.position.y + movementVector.y};
+    nextPosition = clampSpritePositionToScreen(nextPosition);
+    return nextPosition;
+}
+
+bool isOnLakeShore(struct Vector2ui position) {
+    const int16_t dxTL = position.x - leftTopLakeCorner.x;
+    const int16_t dyTL = position.y - leftTopLakeCorner.y;
+    const int16_t dxBR = position.x - rightBottomLakeCorner.x;
+    const int16_t dyBR = position.y - rightBottomLakeCorner.y;
+    return dxTL > -SPRITE_COLUMNS && dyTL > -SPRITE_COLUMNS && dxBR < 0 && dyBR < 0;
+}
+
+bool isOnLake(struct Vector2ui position) {
+    const int16_t dxTL = position.x - leftTopLakeCorner.x;
+    const int16_t dyTL = position.y - leftTopLakeCorner.y;
+    const int16_t dxBR = position.x - rightBottomLakeCorner.x;
+    const int16_t dyBR = position.y - rightBottomLakeCorner.y;
+    return dxTL > 0 && dyTL > 0 && dxBR < -SPRITE_COLUMNS && dyBR < -SPRITE_ROWS;
+}
+
 int main(void) {
     //Init sid
     initNoiseVoiceRnd(UINT16_MAX);
     
     //Init screen
-    setBorderColor(COLOR_BLACK);
+    setBorderColor(GAME_BORDER_COLOR);
     switchToHighResBitmapMode();
     fillMemory(ADDRESS_TO_PTR(SCREEN_RAM), SCREEN_SIZE, (COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN);
     fillMemory(ADDRESS_TO_PTR(BITMAP_RAM), BITMAP_SIZE, 0);
     
     //Init bitmap
-    drawLake((struct Vector2ui) {BITMAP_WIDTH / 2, BITMAP_HEIGHT / 2}, BITMAP_HEIGHT / 4);
+    const struct Vector2ui lakeCenter = {BITMAP_WIDTH / 2, BITMAP_HEIGHT / 2};
+    const uint8_t lakeRadius = BITMAP_HEIGHT / 4;
+    drawLake(lakeCenter, lakeRadius);
+    leftTopLakeCorner = bitmapPositionToSpritePosition(leftTopLakeCorner);
+    rightBottomLakeCorner = bitmapPositionToSpritePosition(rightBottomLakeCorner);
     placeGrass((const struct Vector2uis*) grassPositions, sizeof(grassPositions) / sizeof(struct Vector2uis));
     placeHouses((const struct Vector2uis*) housePositions, sizeof(housePositions) / sizeof(struct Vector2uis));
 
@@ -401,8 +433,10 @@ int main(void) {
     //Final gamestate init
     initFlames();
     bool gamerunning = true;
+    bool playerHasWater = false;
     uint32_t framecounter = 0;
-    
+    //TODO: Solve diagonal movement problem using movement accumulator (and fixed point math?)
+
     //Gameloop
     while (gamerunning) {
 
@@ -421,19 +455,21 @@ int main(void) {
             }
         }
         
-        //Movement
+        //Player
         const uint8_t joystickState = readJoystick1State() & readJoystick2State();
-        const bool joystickUpPressed = (joystickState & JOYSTICK_UP_MASK) == JOYSTICK_KEY_IS_DOWN;
-        const bool joystickDownPressed = (joystickState & JOYSTICK_DOWN_MASK) == JOYSTICK_KEY_IS_DOWN;
-        const bool joystickLeftPressed = (joystickState & JOYSTICK_LEFT_MASK) == JOYSTICK_KEY_IS_DOWN;
-        const bool joystickRightPressed = (joystickState & JOYSTICK_RIGHT_MASK) == JOYSTICK_KEY_IS_DOWN;
-        const bool joystickFirePressed = (joystickState & JOYSTICK_FIRE_MASK) == JOYSTICK_KEY_IS_DOWN;
-        const struct Vector2is movementVector = {joystickRightPressed - joystickLeftPressed,joystickDownPressed - joystickUpPressed};
-        playerSprite.position.x += movementVector.x;
-        playerSprite.position.y += movementVector.y;
-        playerSprite.position = clampSpritePositionToScreen(playerSprite.position);
+        bool playerIsOnLakeShore = isOnLakeShore(playerSprite.position);
+        const struct Vector2ui nextPlayerPositionCandidate = computeNextPlayerPosition(joystickState);
+        if(!isOnLake(nextPlayerPositionCandidate)) {
+            playerSprite.position = nextPlayerPositionCandidate;
+        }
         setSpritePosition(HARDWARE_PLAYER_SPRITE_INDEX, playerSprite.position);
 
+        //Gameplay
+        if(isJoystickFirePressed(joystickState) && playerIsOnLakeShore) {
+            playerHasWater = true;
+        }
+        setBorderColor(playerHasWater ? COLOR_BLUE : GAME_BORDER_COLOR);
+        
         //On to next frame
         framecounter++;
     }

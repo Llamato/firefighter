@@ -5,9 +5,9 @@
 #include "../gllm/gllm.h"
 #include "vic.h"
 
-struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position) {
+struct MemoryPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position) {
     const uint16_t bitPosition = position.y * SPRITE_BYTES_PER_ROW * BITS_PER_BYTE + position.x;
-    struct BitmapPosition bitmapPosition = { bitPosition / BITS_PER_BYTE, bitPosition % BITS_PER_BYTE};
+    struct MemoryPosition bitmapPosition = { bitPosition / BITS_PER_BYTE, bitPosition % BITS_PER_BYTE};
     return bitmapPosition;
 }
 
@@ -15,30 +15,20 @@ struct Vector2uis rasterPositionToCharGridPosition(const struct Vector2ui raster
     return (struct Vector2uis) {rasterPosition.x / BITS_PER_BYTE, rasterPosition.y / BITS_PER_BYTE};
 }
 
-struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition) { //Potentially optimize use smaller uints were possible
+struct MemoryPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition) { //Potentially optimize use smaller uints were possible
     struct Vector2uis charGridPosition = rasterPositionToCharGridPosition(rasterPosition);
     const uint16_t pixelY = rasterPosition.y % BITS_PER_BYTE;
     const uint16_t offset = (charGridPosition.y * TEXT_SCREEN_COLUMNS + charGridPosition.x) * BYTES_PER_CHAR_BITMAP + pixelY;
     const uint16_t pixelX = (BITS_PER_BYTE -1) - rasterPosition.x % BITS_PER_BYTE;
-    return (struct BitmapPosition) {offset, pixelX};
+    return (struct MemoryPosition) {offset, pixelX};
 }
 
-struct Vector2ui rasterPositionToSpritePosition(const struct Vector2uis rasterPosition) {
-    return (struct Vector2ui) {rasterPosition.x * 8 + 24, rasterPosition.y * 8 + 50};
-}
-
-struct Vector2uis spritePositionToRasterPosition(const struct Vector2ui spritePosition) {
-    return (struct Vector2uis) {(spritePosition.x - 24) / 8, (spritePosition.y - 50) / 8};
-}
+struct Vector2ui bitmapPositionToSpritePosition(struct Vector2ui bitmapPosition) {
+    return (struct Vector2ui) {bitmapPosition.x + BITMAP_SPRITE_X_OFFSET, bitmapPosition.y + BITMAP_SPRITE_Y_OFFSET};
+} 
 
 struct Vector2ui charGridPositionToRasterPosition(const struct Vector2ui gridPosition) {
     return (struct Vector2ui) {gridPosition.x * BITS_PER_BYTE, gridPosition.y * BITS_PER_BYTE};
-}
-
-struct Vector2ui charGridPositionToSpritePosition(const struct Vector2uis gridPosition) {
-    const struct Vector2ui rasterPosition = {gridPosition.x * BITS_PER_BYTE, gridPosition.y * BITS_PER_BYTE};
-    const struct Vector2ui spritePosition = {rasterPosition.x * 8 + 24, rasterPosition.y * 8 + 50};
-    return spritePosition;
 }
 
 void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary) {
@@ -145,12 +135,12 @@ void copySpriteBitmap(volatile unsigned char* to, volatile unsigned char* from) 
 }
 
 void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position) {
-    struct BitmapPosition bitmapPosition = spritePixelPositionToBitmapPosition(position);
+    struct MemoryPosition bitmapPosition = spritePixelPositionToBitmapPosition(position);
     bitmapPointer[bitmapPosition.byte] |= (1 << ((BITS_PER_BYTE - 1) - bitmapPosition.bit)); 
 }
 
 void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position) {
-    struct BitmapPosition bitmapPosition = spritePixelPositionToBitmapPosition(position);
+    struct MemoryPosition bitmapPosition = spritePixelPositionToBitmapPosition(position);
     bitmapPointer[bitmapPosition.byte] &= ~(1 << ((BITS_PER_BYTE -1) - bitmapPosition.bit));
 }
 
@@ -210,11 +200,11 @@ void switchToHighResBitmapMode() {
 }
 
 void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position) {
-    struct BitmapPosition pixelPosition = rasterPositionToMemoryPosition(position);
+    struct MemoryPosition pixelPosition = rasterPositionToMemoryPosition(position);
     *ADDRESS_TO_PTR(bitmapPointer + pixelPosition.byte) |= (1 << pixelPosition.bit);
 };
 
 void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position) {
-    struct BitmapPosition pixelPosition = rasterPositionToMemoryPosition(position);
+    struct MemoryPosition pixelPosition = rasterPositionToMemoryPosition(position);
     *ADDRESS_TO_PTR(bitmapPointer + pixelPosition.byte) &= ~(1 << pixelPosition.bit);
 }

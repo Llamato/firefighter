@@ -18,5 +18,8 @@
 
     uint8_t readJoystick1State();
     uint8_t readJoystick2State();
+    struct Vector2is getMovementVectorFromJoystickState(uint8_t joystickState);
+    bool isJoystickFirePressed(uint8_t joystickState); 
+
 #endif
 

@@ -56,8 +56,10 @@
     #define SPRITE_SIZE 64
     #define SPRITE_SCREEN_LEFT_LIMIT 1
     #define SPRITE_SCREEN_UPPER_LIMIT 1
-    #define SPRITE_SCREEN_RIGHT_LIMIT BITMAP_WIDTH + 24
-    #define SPRITE_SCREEN_LOWER_LIMIT BITMAP_HEIGHT + 50
+    #define BITMAP_SPRITE_X_OFFSET 24
+    #define BITMAP_SPRITE_Y_OFFSET 50
+    #define SPRITE_SCREEN_RIGHT_LIMIT BITMAP_WIDTH + BITMAP_SPRITE_X_OFFSET
+    #define SPRITE_SCREEN_LOWER_LIMIT BITMAP_HEIGHT + BITMAP_SPRITE_Y_OFFSET
     #define HARDWARE_SPRITE_COUNT 8
     #define SPRITE_BYTES_PER_ROW SPRITE_COLUMNS / BITS_PER_BYTE
     #define SPRITE_BITMAP_ADDRESS(SPRITE_BLOCK) (SPRITE_BLOCK * SPRITE_SIZE)
@@ -117,7 +119,7 @@
         uint8_t frameCount;
     };
 
-    struct BitmapPosition {
+    struct MemoryPosition {
         uint16_t byte;
         uint8_t bit;
     };
@@ -133,13 +135,12 @@
         uint8_t height;
     };
 
-    struct BitmapPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position);
+    struct MemoryPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position);
     struct Vector2uis rasterPositionToCharGridPosition(const struct Vector2ui rasterPosition);
-    struct BitmapPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
-    struct Vector2ui rasterPositionToSpritePosition(const struct Vector2uis rasterPosition);
+    struct MemoryPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
+    struct Vector2ui bitmapPositionToSpritePosition(struct Vector2ui bitmapPosition);
     struct Vector2uis spritePositionToRasterPosition(const struct Vector2ui spritePosition);
     struct Vector2ui charGridPositionToRasterPosition(const struct Vector2ui gridPosition);
-    struct Vector2ui charGridPositionToSpritePosition(const struct Vector2uis gridPosition);
     void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary);
     void setSpriteColor(const uint8_t spriteNr, uint8_t color);
     void enableSprite(const uint8_t spriteNr);
