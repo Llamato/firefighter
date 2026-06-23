@@ -31,10 +31,16 @@
 #define HARDWARE_PLAYER_SPRITE_INDEX 0
 #define FLAME_SPRITE_COUNT HARDWARE_SPRITE_COUNT-1
 #define FLAME_SPEED_GATE 0xffff
-#define FLAME_LIFE_TIME 0xffffff
+#define FLAME_LIFE_TIME 0x00000fff
+#define FLAME_COLOR COLOR_ORANGE
 
-#define GAME_BORDER_COLOR COLOR_BLACK
+#define GAME_BORDER_COLOR COLOR_LIGHT_GREEN
 #define GAME_ONFIRE_COLOR COLOR_ORANGE
+
+struct FlameTarget {
+    struct Vector2ui position;
+    bool burned;
+};
 
 const unsigned char flameSprite1Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = { 
     #embed "assets/mysprites.prg" SPRITE_EMBED_PARAMS(0)
@@ -136,7 +142,8 @@ struct HighResBitmapMultiTile house = {
     HOUSE_TILE_HEIGHT
 };
 
-const struct Vector2uis grassPositions[] = {
+const struct Vector2uis flameTargets[] = {
+    //Grass
     {13, 1},
     {17, 1},
     {20, 1},
@@ -245,15 +252,20 @@ const struct Vector2uis grassPositions[] = {
     {29, 22},
     {29, 23},
     {29, 24},
-    {29, 25}
-};
+    {29, 25},
 
-const struct Vector2uis housePositions[] = {
+    //House positions
     {10, 5},
     {30, 5},
     {10, 20},
     {30, 16}
 };
+
+#define GRASS_COUNT 109
+#define HOUSE_COUNT 4
+#define TARGET_COUNT GRASS_COUNT + HOUSE_COUNT
+const struct Vector2uis* grassPositions = &flameTargets[0];
+const struct Vector2uis* housePositions = &flameTargets[GRASS_COUNT];
 
 struct Sprite playerSprite = {
     COLOR_YELLOW,
@@ -271,18 +283,18 @@ volatile unsigned char* flameAnimationFrames[] = {
 
 struct AnimatedSpriteTemplate flameSpriteTemplates[] = {
     {
-        COLOR_ORANGE,
+        FLAME_COLOR,
         true,
-        true,
-        true,
+        false,
+        false,
         flameAnimationFrames,
         sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     },
     {
-        COLOR_ORANGE,
+        FLAME_COLOR,
         true,
-        true,
-        true,
+        false,
+        false,
         flameAnimationFrames,
         sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     }
@@ -318,18 +330,8 @@ static struct Vector2ui targetFlamePositions[FLAME_SPRITE_COUNT];
 static struct Vector2ui currentFlamePositions[FLAME_SPRITE_COUNT];
 static uint32_t flameLifetimes[FLAME_SPRITE_COUNT];
 static int8_t flameSpawnPointMovementVelocity = 1;
-void initFlames(){
-    const struct Vector2ui zero = {0, 0};
-    for(uint8_t currentFlame = 0; currentFlame < FLAME_SPRITE_COUNT; currentFlame++) {
-        targetFlamePositions[currentFlame] = zero;
-        currentFlamePositions[currentFlame] = zero;
-        flameLifetimes[currentFlame] = 1;
-    }
-}
-
 void spawnFlame(const uint8_t flameNr, const struct Vector2ui startPosition, const uint32_t lifetime) {
     const uint8_t spriteNr = flameNr +1;
-    targetFlamePositions[flameNr] = (struct Vector2ui) {45 * spriteNr, 28 * spriteNr};
     currentFlamePositions[flameNr] = startPosition;
     flameLifetimes[flameNr] = lifetime;
 }
@@ -337,15 +339,14 @@ void spawnFlame(const uint8_t flameNr, const struct Vector2ui startPosition, con
 bool moveFlame(const uint8_t flameNr) {
     const uint8_t spriteNr = flameNr +1;
     const struct Vector2ui targetFlamePosition = targetFlamePositions[flameNr];
-    const struct Vector2ui currentFlamePosition = currentFlamePositions[flameNr];
-    struct Vector2ui nextFlamePosition = {0, 0};
-    if(targetFlamePosition.x < currentFlamePosition.x) nextFlamePosition.x = currentFlamePosition.x -1;
-    if(targetFlamePosition.x > currentFlamePosition.x) nextFlamePosition.x = currentFlamePosition.x +1;
-    if(targetFlamePosition.y < currentFlamePosition.y) nextFlamePosition.y = currentFlamePosition.y -1;
-    if(targetFlamePosition.y > currentFlamePosition.y) nextFlamePosition.y = currentFlamePosition.y +1;
+    struct Vector2ui nextFlamePosition = currentFlamePositions[flameNr];
+    if(targetFlamePosition.x < nextFlamePosition.x) nextFlamePosition.x--;
+    if(targetFlamePosition.x > nextFlamePosition.x) nextFlamePosition.x++;
+    if(targetFlamePosition.y < nextFlamePosition.y) nextFlamePosition.y--;
+    if(targetFlamePosition.y > nextFlamePosition.y) nextFlamePosition.y++;
+    bool arrived = nextFlamePosition.x == targetFlamePosition.x && nextFlamePosition.y == targetFlamePosition.y;
     setSpritePosition(spriteNr, nextFlamePosition);
     currentFlamePositions[flameNr] = nextFlamePosition;
-    bool arrived = nextFlamePosition.x == targetFlamePosition.x && nextFlamePosition.y == targetFlamePosition.y;
     return arrived;
 }
 
@@ -354,14 +355,28 @@ void despwanFlame(const uint8_t flameNr) {
     const uint8_t spriteNr = flameNr +1;
     targetFlamePositions[flameNr] = zero;
     currentFlamePositions[flameNr] = zero;
+    disableSpriteDoubleHeight(spriteNr);
+    disableSpriteDoubleWidth(spriteNr);
 }
 
 void respawnFlame(const uint8_t flameNr) {
-    struct Vector2ui restartingPosition = currentFlamePositions[flameNr];
+    //struct Vector2ui restartingPosition = currentFlamePositions[flameNr];
+    struct Vector2ui restartingPosition = {0, 0};
     if(restartingPosition.x >= BITMAP_WIDTH) flameSpawnPointMovementVelocity = -1;
     if(restartingPosition.x <= 0) flameSpawnPointMovementVelocity = 1;
     restartingPosition.x += flameSpawnPointMovementVelocity;
     spawnFlame(flameNr, restartingPosition, FLAME_LIFE_TIME);
+}
+
+void initFlames(){
+    const struct Vector2ui zero = {0, 0};
+    for(uint8_t flameNr = 0; flameNr < FLAME_SPRITE_COUNT; flameNr++) {
+        const uint8_t spriteNr = flameNr +1;
+        targetFlamePositions[flameNr] = zero;
+        currentFlamePositions[flameNr] = zero;
+        flameLifetimes[flameNr] = 1;
+        targetFlamePositions[flameNr] = (struct Vector2ui) {45 * spriteNr, 28 * spriteNr};
+    }
 }
 
 void flickerFlames() {
@@ -375,10 +390,23 @@ void flickerFlames() {
     *ADDRESS_TO_PTR(SPRITE_7_PTR) = temp;
 }
 
+void enlargeFlame(uint8_t flameNr) {
+    const uint8_t spriteNr = flameNr +1;
+    enableSpriteDoubleHeight(spriteNr);
+    enableSpriteDoubleWidth(spriteNr);
+}
+
+
+struct Vector2ui findTargetForFlame(const uint8_t flameNr) {
+    uint8_t rng = getRandomNumber();
+    setBorderColor(rng);
+    rng += flameNr;
+    return charGridPositionToSpritePosition(flameTargets[rng]);
+}
+
 bool isFlameCollidingWithPlayer(uint8_t flameNr) {
-    const uint8_t spriteNr = flameNr -1;
-    
-    return false;
+    return (currentFlamePositions[flameNr].x < playerSprite.position.x + SPRITE_COLUMNS) && (playerSprite.position.x < currentFlamePositions[flameNr].x + SPRITE_COLUMNS) &&
+    (currentFlamePositions[flameNr].y < playerSprite.position.y + SPRITE_ROWS) && (playerSprite.position.y < currentFlamePositions[flameNr].y + SPRITE_ROWS);
 }
 
 struct Vector2ui computeNextPlayerPosition(uint8_t joystickState) {
@@ -406,7 +434,7 @@ bool isOnLake(struct Vector2ui position) {
 
 int main(void) {
     //Init sid
-    initNoiseVoiceRnd(UINT16_MAX);
+    initNoiseVoiceRnd();
     
     //Init screen
     setBorderColor(GAME_BORDER_COLOR);
@@ -420,8 +448,8 @@ int main(void) {
     drawLake(lakeCenter, lakeRadius);
     lakeBoundingBox.topLeftCorner = bitmapPositionToSpritePosition(lakeBoundingBox.topLeftCorner);
     lakeBoundingBox.bottomRightCorner = bitmapPositionToSpritePosition(lakeBoundingBox.bottomRightCorner);
-    placeGrass((const struct Vector2uis*) grassPositions, sizeof(grassPositions) / sizeof(struct Vector2uis));
-    placeHouses((const struct Vector2uis*) housePositions, sizeof(housePositions) / sizeof(struct Vector2uis));
+    placeGrass((const struct Vector2uis*) grassPositions, GRASS_COUNT);
+    placeHouses((const struct Vector2uis*) housePositions, HOUSE_COUNT);
 
     //Init sprites
     *ADDRESS_TO_PTR(SPRITES_ENABLE) = 0xff;
@@ -452,16 +480,20 @@ int main(void) {
         const bool flameflickertime = (framecounter & FLAME_SPEED_GATE) == 0;
         if(flameflickertime) flickerFlames();
         for(uint8_t currentFlame = 0; currentFlame < FLAME_SPRITE_COUNT; currentFlame++) {
+            const uint8_t currentSprite = currentFlame +1;
             const bool isFlameOnTarget = moveFlame(currentFlame);
             if(isFlameOnTarget) {
                 flameLifetimes[currentFlame]--;
+                setSpriteColor(currentSprite, COLOR_BLUE); //Debug!!!
+                
             }
             if(flameLifetimes[currentFlame] == 0) {
-                flameLifetimes[currentFlame] = FLAME_LIFE_TIME;
+                targetFlamePositions[currentFlame] = findTargetForFlame(currentFlame);
+                setSpriteColor(currentSprite, FLAME_COLOR);
                 respawnFlame(currentFlame);
-                break;
             }
         }
+        flickerFlames();
         
         //Player
         const uint8_t joystickState = readJoystick1State() & readJoystick2State();
@@ -476,12 +508,12 @@ int main(void) {
         const bool fireButtonIsPressed = isJoystickFirePressed(joystickState);
         if(fireButtonIsPressed && playerIsOnLakeShore) {
             playerHasWater = true;
+             setBorderColor(GAME_BORDER_COLOR);
         }
         if(fireButtonIsPressed && playerIsOnLakeShore == false) {
             playerHasWater = false;
+            setBorderColor(COLOR_BLUE);
         }
-
-        setBorderColor(playerHasWater ? COLOR_BLUE : GAME_BORDER_COLOR);
 
         //On to next frame
         framecounter++;

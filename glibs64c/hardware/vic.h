@@ -138,11 +138,12 @@
     };
 
     struct MemoryPosition spritePixelPositionToBitmapPosition(const struct Vector2uis position);
-    struct Vector2uis rasterPositionToCharGridPosition(const struct Vector2ui rasterPosition);
-    struct MemoryPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition);
+    struct Vector2ui bitmapPositionToSpritePosition(const struct Vector2ui rasterPosition);
+    struct Vector2uis bitmapPositionToCharGridPosition(const struct Vector2ui rasterPosition);
+    struct MemoryPosition bitmapPositionToMemoryPosition(const struct Vector2ui rasterPosition);
     struct Vector2ui bitmapPositionToSpritePosition(struct Vector2ui bitmapPosition);
-    struct Vector2uis spritePositionToRasterPosition(const struct Vector2ui spritePosition);
-    struct Vector2ui charGridPositionToRasterPosition(const struct Vector2ui gridPosition);
+    struct Vector2ui charGridPositionToSpritePosition(struct Vector2uis gridPosition);
+    struct Vector2ui charGridPositionToBitmapPosition(const struct Vector2uis gridPosition);
     void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary);
     void setSpriteColor(const uint8_t spriteNr, uint8_t color);
     void enableSprite(const uint8_t spriteNr);

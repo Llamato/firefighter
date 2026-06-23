@@ -11,12 +11,12 @@ struct MemoryPosition spritePixelPositionToBitmapPosition(const struct Vector2ui
     return bitmapPosition;
 }
 
-struct Vector2uis rasterPositionToCharGridPosition(const struct Vector2ui rasterPosition) {
+struct Vector2uis bitmapPositionToCharGridPosition(const struct Vector2ui rasterPosition) {
     return (struct Vector2uis) {rasterPosition.x / BITS_PER_BYTE, rasterPosition.y / BITS_PER_BYTE};
 }
 
-struct MemoryPosition rasterPositionToMemoryPosition(const struct Vector2ui rasterPosition) { //Potentially optimize use smaller uints were possible
-    struct Vector2uis charGridPosition = rasterPositionToCharGridPosition(rasterPosition);
+struct MemoryPosition bitmapPositionToMemoryPosition(const struct Vector2ui rasterPosition) { //Potentially optimize use smaller uints were possible
+    struct Vector2uis charGridPosition = bitmapPositionToCharGridPosition(rasterPosition);
     const uint16_t pixelY = rasterPosition.y % BITS_PER_BYTE;
     const uint16_t offset = (charGridPosition.y * TEXT_SCREEN_COLUMNS + charGridPosition.x) * BYTES_PER_CHAR_BITMAP + pixelY;
     const uint16_t pixelX = (BITS_PER_BYTE -1) - rasterPosition.x % BITS_PER_BYTE;
@@ -25,9 +25,13 @@ struct MemoryPosition rasterPositionToMemoryPosition(const struct Vector2ui rast
 
 struct Vector2ui bitmapPositionToSpritePosition(struct Vector2ui bitmapPosition) {
     return (struct Vector2ui) {bitmapPosition.x + BITMAP_SPRITE_X_OFFSET, bitmapPosition.y + BITMAP_SPRITE_Y_OFFSET};
-} 
+}
 
-struct Vector2ui charGridPositionToRasterPosition(const struct Vector2ui gridPosition) {
+struct Vector2ui charGridPositionToSpritePosition(struct Vector2uis gridPosition) {
+    return (struct Vector2ui) {gridPosition.x * BITS_PER_BYTE + BITMAP_SPRITE_X_OFFSET, gridPosition.y * BITS_PER_BYTE + BITMAP_SPRITE_Y_OFFSET};
+}
+
+struct Vector2ui charGridPositionToBitmapPosition(const struct Vector2uis gridPosition) {
     return (struct Vector2ui) {gridPosition.x * BITS_PER_BYTE, gridPosition.y * BITS_PER_BYTE};
 }
 
@@ -169,8 +173,8 @@ bool isSpriteCollidingWithBackground(const uint8_t spriteNr) {
 }
 
 void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Rectangle2ui rectangle, const uint8_t foregroundColor, const uint8_t backgroundColor) {
-    const struct Vector2uis topLeftGridCell = rasterPositionToCharGridPosition(rectangle.topLeftCorner);
-    const struct Vector2uis bottomRightGridCell = rasterPositionToCharGridPosition(rectangle.bottomRightCorner);
+    const struct Vector2uis topLeftGridCell = bitmapPositionToCharGridPosition(rectangle.topLeftCorner);
+    const struct Vector2uis bottomRightGridCell = bitmapPositionToCharGridPosition(rectangle.bottomRightCorner);
     for(uint8_t currentRow = topLeftGridCell.y; currentRow <= bottomRightGridCell.y; currentRow++) {
         for(uint8_t currentColumn = topLeftGridCell.x; currentColumn <= bottomRightGridCell.x; currentColumn++) {
              screenRamPointer[currentRow * TEXT_SCREEN_COLUMNS + currentColumn] = (foregroundColor << BITS_PER_NIBBLE) | backgroundColor;
@@ -204,11 +208,11 @@ void switchToHighResBitmapMode() {
 }
 
 void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position) {
-    struct MemoryPosition pixelPosition = rasterPositionToMemoryPosition(position);
+    struct MemoryPosition pixelPosition = bitmapPositionToMemoryPosition(position);
     *ADDRESS_TO_PTR(bitmapPointer + pixelPosition.byte) |= (1 << pixelPosition.bit);
 };
 
 void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position) {
-    struct MemoryPosition pixelPosition = rasterPositionToMemoryPosition(position);
+    struct MemoryPosition pixelPosition = bitmapPositionToMemoryPosition(position);
     *ADDRESS_TO_PTR(bitmapPointer + pixelPosition.byte) &= ~(1 << pixelPosition.bit);
 }
