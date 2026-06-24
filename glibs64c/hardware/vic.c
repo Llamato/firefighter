@@ -206,29 +206,29 @@ void setHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const 
     screenRamPointer[gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x] = colors;
 }
 
-uint8_t getBackgroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition) {
-    uint8_t colors = screenRamPointer[gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x] = colors;
-    return colors & 0x0f;
-}
-
-void setBackgroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition, uint8_t primeryColor) {
-    volatile unsigned char* gridCell = ADDRESS_TO_PTR(screenRamPointer+gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x);
-    uint8_t colors = *gridCell;
-    colors &= 0x0f;
-    colors |= primeryColor << BITS_PER_NIBBLE;
-    *gridCell = colors;
-}
-
 uint8_t getForegroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition) {
     uint8_t colors = screenRamPointer[gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x] = colors;
     return (colors & 0xf0) >> BITS_PER_NIBBLE;
 }
 
-void setForegroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition, uint8_t secondaryColor) {
+void setForegroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition, uint8_t color) {
+    volatile unsigned char* gridCell = ADDRESS_TO_PTR(screenRamPointer+gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x);
+    uint8_t colors = *gridCell;
+    colors &= 0x0f;
+    colors |= (color << BITS_PER_NIBBLE);
+    *gridCell = colors;
+}
+
+uint8_t getBackgroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition) {
+    uint8_t colors = screenRamPointer[gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x] = colors;
+    return colors & 0x0f;
+}
+
+void setBackgroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition, uint8_t color) {
     volatile unsigned char* gridCell = ADDRESS_TO_PTR(screenRamPointer+gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x);
     uint8_t colors = *gridCell;
     colors &= 0xf0;
-    colors |= secondaryColor;
+    colors |= color;
     *gridCell = colors;
 }
 

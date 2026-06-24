@@ -181,9 +181,9 @@
     uint8_t getHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition);
     void setHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t colors);
     uint8_t getBackgroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition);
-    void setBackgroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t primeryColor);
+    void setBackgroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t color);
     uint8_t getForegroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition);
-    void setForegroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t secondaryColor);
+    void setForegroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t color);
     void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Rectangle2ui rectangle, const uint8_t foregroundColor, const uint8_t backgroundColor);
     void switchToHighResBitmapMode();
     void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
