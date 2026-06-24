@@ -26,7 +26,7 @@ void setVoice3DutyCycle(uint16_t dutyCycle) {
 }
 
 void initNoiseVoiceRnd() {
-    setVoice3Frequency(0);
+    setVoice3Frequency(255);
     setVoice3DutyCycle(0x800);
     setVoice3ControlRegisterState(SID_VOICE_CONTROL_WAVEFORM_NOISE_MASK);
 }

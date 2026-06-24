@@ -17,6 +17,9 @@
 #define SPRITE_6_BLOCK 224
 #define SPRITE_7_BLOCK 250
 
+#define SPRITE_GRID_WIDTH 2
+#define SPRITE_GRID_HEIGHT 2
+
 #define HOUSE_TILE_WIDTH 3
 #define HOUSE_TILE_HEIGHT 2
 #define HOUSE_UPPER_FOREGROUND_COLOR COLOR_LIGHT_RED
@@ -32,10 +35,15 @@
 #define FLAME_SPRITE_COUNT HARDWARE_SPRITE_COUNT-1
 #define FLAME_SPEED_GATE 0xffff
 #define FLAME_LIFE_TIME 0x00000fff
-#define FLAME_COLOR COLOR_ORANGE
-
-#define GAME_BORDER_COLOR COLOR_LIGHT_GREEN
+#define PRIMERY_FLAME_COLOR COLOR_ORANGE
+#define SECONDARY_FLAME_COLOR COLOR_BROWN
 #define GAME_ONFIRE_COLOR COLOR_ORANGE
+#define PRIMERY_WATER_COLOR COLOR_BLUE
+#define SECONDARY_WATER_COLOR COLOR_LIGHT_BLUE
+#define GAME_BORDER_COLOR COLOR_LIGHT_GREEN
+#define PLAYER_SECONDARY_COLOR COLOR_LIGHT_GRAY
+#define BURNED_POSITION_X 0
+#define BURNED_POSITION_Y 0
 
 struct FlameTarget {
     struct Vector2ui position;
@@ -142,7 +150,7 @@ struct HighResBitmapMultiTile house = {
     HOUSE_TILE_HEIGHT
 };
 
-const struct Vector2uis flameTargets[] = {
+struct Vector2uis flameTargets[] = {
     //Grass
     {13, 1},
     {17, 1},
@@ -283,7 +291,7 @@ volatile unsigned char* flameAnimationFrames[] = {
 
 struct AnimatedSpriteTemplate flameSpriteTemplates[] = {
     {
-        FLAME_COLOR,
+        PRIMERY_FLAME_COLOR,
         true,
         false,
         false,
@@ -291,7 +299,7 @@ struct AnimatedSpriteTemplate flameSpriteTemplates[] = {
         sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     },
     {
-        FLAME_COLOR,
+        PRIMERY_FLAME_COLOR,
         true,
         false,
         false,
@@ -300,6 +308,10 @@ struct AnimatedSpriteTemplate flameSpriteTemplates[] = {
     }
 };
 
+bool areSpritesIntersecting(struct Vector2ui sprite1position, struct Vector2ui sprite2position) {
+    return (sprite1position.x < sprite2position.x + SPRITE_COLUMNS) && (sprite2position.x < sprite1position.x + SPRITE_COLUMNS) && (sprite1position.y < sprite2position.y + SPRITE_ROWS) && (sprite2position.y < sprite1position.y + SPRITE_ROWS);
+}
+
 struct Rectangle2ui lakeBoundingBox;
 void drawLake(const struct Vector2ui center, const uint8_t radius) {
     makeFilledCircleHighResBitmapBresenham(ADDRESS_TO_PTR(BITMAP_RAM), center, radius);
@@ -307,7 +319,7 @@ void drawLake(const struct Vector2ui center, const uint8_t radius) {
     lakeBoundingBox.topLeftCorner.y = center.y - radius;
     lakeBoundingBox.bottomRightCorner.x = center.x + radius;
     lakeBoundingBox.bottomRightCorner.y = center.y + radius;
-    colorRectangularHighResBitmapRegion(ADDRESS_TO_PTR(SCREEN_RAM), lakeBoundingBox, COLOR_LIGHT_BLUE, COLOR_GREEN);
+    colorRectangularHighResBitmapRegion(ADDRESS_TO_PTR(SCREEN_RAM), lakeBoundingBox, SECONDARY_WATER_COLOR, COLOR_GREEN);
 }
 
 void placeGrass(const struct Vector2uis* gridPositions, const uint16_t amount) { 
@@ -327,11 +339,32 @@ void placeHouses(const struct Vector2uis* gridPositions, const uint8_t amount) {
 }
 
 static struct Vector2ui targetFlamePositions[FLAME_SPRITE_COUNT];
+static uint16_t selectedFlameTargets[FLAME_SPRITE_COUNT];
 static struct Vector2ui currentFlamePositions[FLAME_SPRITE_COUNT];
 static uint32_t flameLifetimes[FLAME_SPRITE_COUNT];
 static int8_t flameSpawnPointMovementVelocity = 1;
+static uint16_t burnedTargetCount = 0;
+static uint8_t previousRng = 0;
+uint16_t findTargetForFlame(const uint8_t flameNr) {
+    uint8_t rng = previousRng;
+
+    //This somehow hangs the entire program. Fine... lets not do it then...
+    /*for(uint8_t rngAttempts = 0; rngAttempts < 10; rngAttempts++) {
+        setBorderColor(COLOR_BLACK);
+        rng = getRandomNumber();
+        setBorderColor(GAME_BORDER_COLOR);
+        if(rng != previousRng) break;
+    }*/
+
+    rng = getRandomNumber();
+    previousRng = rng;
+    rng += flameNr;
+    return rng;
+}
+
 void spawnFlame(const uint8_t flameNr, const struct Vector2ui startPosition, const uint32_t lifetime) {
     const uint8_t spriteNr = flameNr +1;
+    enableSprite(spriteNr);
     currentFlamePositions[flameNr] = startPosition;
     flameLifetimes[flameNr] = lifetime;
 }
@@ -344,6 +377,8 @@ bool moveFlame(const uint8_t flameNr) {
     if(targetFlamePosition.x > nextFlamePosition.x) nextFlamePosition.x++;
     if(targetFlamePosition.y < nextFlamePosition.y) nextFlamePosition.y--;
     if(targetFlamePosition.y > nextFlamePosition.y) nextFlamePosition.y++;
+    //if(nextFlamePosition.x > SPRITE_X_MAX) nextFlamePosition.x = SPRITE_X_MAX;
+    //if(nextFlamePosition.x > SPRITE_Y_MAX) nextFlamePosition.y = SPRITE_Y_MAX;
     bool arrived = nextFlamePosition.x == targetFlamePosition.x && nextFlamePosition.y == targetFlamePosition.y;
     setSpritePosition(spriteNr, nextFlamePosition);
     currentFlamePositions[flameNr] = nextFlamePosition;
@@ -351,19 +386,16 @@ bool moveFlame(const uint8_t flameNr) {
 }
 
 void despwanFlame(const uint8_t flameNr) {
-    const struct Vector2ui zero = {0, 0};
     const uint8_t spriteNr = flameNr +1;
+    disableSprite(spriteNr);
+    const struct Vector2ui zero = {0, 0};
     targetFlamePositions[flameNr] = zero;
     currentFlamePositions[flameNr] = zero;
-    disableSpriteDoubleHeight(spriteNr);
-    disableSpriteDoubleWidth(spriteNr);
 }
 
 void respawnFlame(const uint8_t flameNr) {
-    //struct Vector2ui restartingPosition = currentFlamePositions[flameNr];
-    struct Vector2ui restartingPosition = {0, 0};
+    struct Vector2ui restartingPosition = currentFlamePositions[flameNr];
     if(restartingPosition.x >= BITMAP_WIDTH) flameSpawnPointMovementVelocity = -1;
-    if(restartingPosition.x <= 0) flameSpawnPointMovementVelocity = 1;
     restartingPosition.x += flameSpawnPointMovementVelocity;
     spawnFlame(flameNr, restartingPosition, FLAME_LIFE_TIME);
 }
@@ -374,8 +406,9 @@ void initFlames(){
         const uint8_t spriteNr = flameNr +1;
         targetFlamePositions[flameNr] = zero;
         currentFlamePositions[flameNr] = zero;
-        flameLifetimes[flameNr] = 1;
-        targetFlamePositions[flameNr] = (struct Vector2ui) {45 * spriteNr, 28 * spriteNr};
+        flameLifetimes[flameNr] = FLAME_LIFE_TIME;
+        selectedFlameTargets[flameNr] = findTargetForFlame(flameNr);
+        targetFlamePositions[flameNr] = charGridPositionToSpritePosition(flameTargets[selectedFlameTargets[flameNr]]);
     }
 }
 
@@ -394,19 +427,6 @@ void enlargeFlame(uint8_t flameNr) {
     const uint8_t spriteNr = flameNr +1;
     enableSpriteDoubleHeight(spriteNr);
     enableSpriteDoubleWidth(spriteNr);
-}
-
-
-struct Vector2ui findTargetForFlame(const uint8_t flameNr) {
-    uint8_t rng = getRandomNumber();
-    setBorderColor(rng);
-    rng += flameNr;
-    return charGridPositionToSpritePosition(flameTargets[rng]);
-}
-
-bool isFlameCollidingWithPlayer(uint8_t flameNr) {
-    return (currentFlamePositions[flameNr].x < playerSprite.position.x + SPRITE_COLUMNS) && (playerSprite.position.x < currentFlamePositions[flameNr].x + SPRITE_COLUMNS) &&
-    (currentFlamePositions[flameNr].y < playerSprite.position.y + SPRITE_ROWS) && (playerSprite.position.y < currentFlamePositions[flameNr].y + SPRITE_ROWS);
 }
 
 struct Vector2ui computeNextPlayerPosition(uint8_t joystickState) {
@@ -432,6 +452,17 @@ bool isOnLake(struct Vector2ui position) {
     return dxTL > 0 && dyTL > 0 && dxBR < -SPRITE_COLUMNS && dyBR < -SPRITE_ROWS;
 }
 
+void looseGame() {
+    uint8_t borderColor = 0;
+    while(true) {
+        setBorderColor(borderColor);
+        borderColor++;
+        if(borderColor == 0){
+            flickerFlames();
+        }
+    }
+}
+
 int main(void) {
     //Init sid
     initNoiseVoiceRnd();
@@ -439,7 +470,7 @@ int main(void) {
     //Init screen
     setBorderColor(GAME_BORDER_COLOR);
     switchToHighResBitmapMode();
-    fillMemory(ADDRESS_TO_PTR(SCREEN_RAM), SCREEN_SIZE, (COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN);
+    fillMemory(ADDRESS_TO_PTR(SCREEN_RAM), SCREEN_SIZE, (GRASS_FOREGROUND_COLOR << BITS_PER_NIBBLE) | GRASS_BACKGROUND_COLOR);
     fillMemory(ADDRESS_TO_PTR(BITMAP_RAM), BITMAP_SIZE, 0);
     
     //Init bitmap
@@ -453,7 +484,8 @@ int main(void) {
 
     //Init sprites
     *ADDRESS_TO_PTR(SPRITES_ENABLE) = 0xff;
-    setSharedMulticolorSpriteColors(COLOR_BROWN, COLOR_LIGHT_GRAY);
+    setSharedMulticolorSpritesPrimeryColor(COLOR_BROWN);
+    setSharedMulticolorSpritesSecondaryColor(PLAYER_SECONDARY_COLOR);
     enableSprite(HARDWARE_PLAYER_SPRITE_INDEX);
     applySpriteTemplate(HARDWARE_PLAYER_SPRITE_INDEX, SPRITE_0_BLOCK, (const struct SpriteTemplate*) &playerSprite);
     copySpriteBitmap(playerSprite.bitmapPtr, (volatile unsigned char*) playerSprite1Bitmap);
@@ -469,9 +501,9 @@ int main(void) {
     initFlames();
     bool gamerunning = true;
     bool playerHasWater = false;
+    bool playerIsOnFire = false;
     uint32_t playerEndurence = 0xffff; 
     uint32_t framecounter = 0;
-    //TODO: Solve diagonal movement problem using movement accumulator (and fixed point math?)
 
     //Gameloop
     while (gamerunning) {
@@ -484,12 +516,47 @@ int main(void) {
             const bool isFlameOnTarget = moveFlame(currentFlame);
             if(isFlameOnTarget) {
                 flameLifetimes[currentFlame]--;
-                setSpriteColor(currentSprite, COLOR_BLUE); //Debug!!!
+                setBackgroundColorOfHighResBitmapTile(ADDRESS_TO_PTR(SCREEN_RAM), flameTargets[selectedFlameTargets[currentFlame]], PRIMERY_FLAME_COLOR);
                 
             }
             if(flameLifetimes[currentFlame] == 0) {
-                targetFlamePositions[currentFlame] = findTargetForFlame(currentFlame);
-                setSpriteColor(currentSprite, FLAME_COLOR);
+                //setHighResBitmapTileColors(ADDRESS_TO_PTR(SCREEN_RAM), flameTargets[selectedFlameTargets[currentFlame]], PRIMERY_FLAME_COLOR << BITS_PER_NIBBLE | SECONDARY_FLAME_COLOR);
+                setForegroundColorOfHighResBitmapTile(ADDRESS_TO_PTR(SCREEN_RAM), flameTargets[selectedFlameTargets[currentFlame]], SECONDARY_FLAME_COLOR);
+                burnedTargetCount++;
+                const int16_t substituteTargetIndex = sizeof(flameTargets) / sizeof(struct Vector2uis) - burnedTargetCount;
+                if(substituteTargetIndex < 0) {
+                    looseGame();
+                }
+                flameTargets[selectedFlameTargets[currentFlame]].x = flameTargets[substituteTargetIndex].x;
+                flameTargets[selectedFlameTargets[currentFlame]].y = flameTargets[substituteTargetIndex].y;
+                flameTargets[burnedTargetCount].x = BURNED_POSITION_X;
+                flameTargets[burnedTargetCount].y = BURNED_POSITION_Y;
+
+                //Avoid duplicate targets
+                uint8_t duplicateCheck[FLAME_SPRITE_COUNT];
+                reroll:
+                for(uint8_t currentEntry = 0; currentEntry < FLAME_SPRITE_COUNT; currentEntry++) {
+                    duplicateCheck[currentEntry] = 0;
+                }
+
+                selectedFlameTargets[currentFlame] = findTargetForFlame(currentFlame);
+                targetFlamePositions[currentFlame] = charGridPositionToSpritePosition(flameTargets[selectedFlameTargets[currentFlame]]);
+                
+                //Avoid duplicate targets
+                for(uint8_t currentEntry = 0; currentEntry < FLAME_SPRITE_COUNT; currentEntry++) {
+                    for(uint8_t currentDuplicateCounter = 0; currentDuplicateCounter < FLAME_SPRITE_COUNT; currentDuplicateCounter++) {
+                        if(targetFlamePositions[currentEntry].x == targetFlamePositions[currentDuplicateCounter].x && targetFlamePositions[currentEntry].y == targetFlamePositions[currentDuplicateCounter].y) {
+                            duplicateCheck[currentDuplicateCounter]++;
+                        }
+                    }
+                }
+                for(uint8_t currentEntry = 0; currentEntry < FLAME_SPRITE_COUNT; currentEntry++) {
+                    if(duplicateCheck[currentEntry] > 1){
+                        goto reroll;
+                    }
+                }
+
+                setSpriteColor(currentSprite, PRIMERY_FLAME_COLOR);
                 respawnFlame(currentFlame);
             }
         }
@@ -504,15 +571,58 @@ int main(void) {
         setSpritePosition(HARDWARE_PLAYER_SPRITE_INDEX, playerSprite.position);
 
         //Gameplay
+        const uint8_t spriteSpriteCollisions = getSpriteSpriteCollisions();
+        const uint8_t spriteBackgroundCollisions = getSpriteBackgroundCollisions();
+        const bool frameLocked = false;
         const bool playerIsOnLakeShore = isOnLakeShore(playerSprite.position);
         const bool fireButtonIsPressed = isJoystickFirePressed(joystickState);
+        const bool isPlayerInFire = spriteSpriteCollisions & (1 << HARDWARE_PLAYER_SPRITE_INDEX);
         if(fireButtonIsPressed && playerIsOnLakeShore) {
-            playerHasWater = true;
-             setBorderColor(GAME_BORDER_COLOR);
+                playerIsOnFire = false;
+                playerHasWater = true;
         }
-        if(fireButtonIsPressed && playerIsOnLakeShore == false) {
+        if(isPlayerInFire && playerHasWater && fireButtonIsPressed) {
+            //fire extinglished (Temporary as hardware collision checks can not determine witch sprite is colliding with witch)
+            for(uint8_t spriteNr = 1; spriteNr < HARDWARE_SPRITE_COUNT; spriteNr++) {
+                if(spriteSpriteCollisions & (1 << spriteNr)) {
+                    const uint8_t flameNr = spriteNr -1;
+                    despwanFlame(flameNr);
+                }
+            }
+            //Water consumed
             playerHasWater = false;
-            setBorderColor(COLOR_BLUE);
+        }else if(playerHasWater && fireButtonIsPressed) {
+            if(spriteBackgroundCollisions & (1 << HARDWARE_PLAYER_SPRITE_INDEX)) {
+                const struct Vector2uis playerPositionOnGrid = spritePositionToCharGridPosition(playerSprite.position);
+                const uint8_t gridCellColors = getHighResBitmapTileColors(ADDRESS_TO_PTR(SCREEN_RAM), playerPositionOnGrid);
+                const uint8_t foregroundColor = (gridCellColors & 0xf0) >> BITS_PER_NIBBLE;
+                const uint8_t backgroundColor = gridCellColors & 0x0f;
+                //Potential optimisation: Remove impossible to hit checks
+                if(backgroundColor == PRIMERY_FLAME_COLOR || backgroundColor == SECONDARY_FLAME_COLOR || foregroundColor == PRIMERY_FLAME_COLOR || foregroundColor == SECONDARY_FLAME_COLOR) {
+                    setHighResBitmapTileColors(ADDRESS_TO_PTR(SCREEN_RAM), playerPositionOnGrid, (GRASS_FOREGROUND_COLOR << BITS_PER_NIBBLE) | GRASS_BACKGROUND_COLOR);
+                    playerHasWater = false;
+                } else {
+                    //Debug!!!
+                    setHighResBitmapTileColors(ADDRESS_TO_PTR(SCREEN_RAM), playerPositionOnGrid, (PRIMERY_WATER_COLOR << BITS_PER_NIBBLE) | SECONDARY_WATER_COLOR);
+                    playerHasWater = false;
+                }
+            }  
+        }
+        /*else if(fireButtonIsPressed && !playerIsOnLakeShore) {
+            //Drop water (Bug / inaccuracy in here were water is dropped before flame is extinglished)
+            playerHasWater = false;
+        }*/
+        else if(isPlayerInFire && !playerHasWater) {
+            playerIsOnFire = true;
+        }
+        
+        //Apply States
+        if(playerIsOnFire) {
+            setSharedMulticolorSpritesSecondaryColor(GAME_ONFIRE_COLOR);
+        } else if(playerHasWater) {
+            setSharedMulticolorSpritesSecondaryColor(PRIMERY_WATER_COLOR);
+        } else {
+            setSharedMulticolorSpritesSecondaryColor(PLAYER_SECONDARY_COLOR);
         }
 
         //On to next frame

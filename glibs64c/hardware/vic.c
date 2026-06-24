@@ -31,13 +31,20 @@ struct Vector2ui charGridPositionToSpritePosition(struct Vector2uis gridPosition
     return (struct Vector2ui) {gridPosition.x * BITS_PER_BYTE + BITMAP_SPRITE_X_OFFSET, gridPosition.y * BITS_PER_BYTE + BITMAP_SPRITE_Y_OFFSET};
 }
 
+struct Vector2uis spritePositionToCharGridPosition(struct Vector2ui spritePosition) {
+    return (struct Vector2uis) {(spritePosition.x - BITMAP_SPRITE_X_OFFSET) / BITS_PER_BYTE,(spritePosition.y - BITMAP_SPRITE_Y_OFFSET) / BITS_PER_BYTE};
+}
+
 struct Vector2ui charGridPositionToBitmapPosition(const struct Vector2uis gridPosition) {
     return (struct Vector2ui) {gridPosition.x * BITS_PER_BYTE, gridPosition.y * BITS_PER_BYTE};
 }
 
-void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary) {
-    *ADDRESS_TO_PTR(0xD025) = primery;
-    *ADDRESS_TO_PTR(0xD026) = secondary;
+void setSharedMulticolorSpritesPrimeryColor(const uint8_t primery) {
+    *ADDRESS_TO_PTR(VIC_SPRITES_MULTICOLOR_PRIMERY) = primery;
+}
+
+void setSharedMulticolorSpritesSecondaryColor(const uint8_t secondary) {
+    *ADDRESS_TO_PTR(VIC_SPRITES_MULTICOLOR_SECONDARY) = secondary;
 }
 
 void setSpriteColor(const uint8_t spriteNr, uint8_t color) {
@@ -168,8 +175,61 @@ void applySpriteTemplate(const uint8_t spriteNr, const uint8_t bitmapBlock, cons
     }
 }
 
-bool isSpriteCollidingWithBackground(const uint8_t spriteNr) {
-    return *ADDRESS_TO_PTR(SPRITES_BACKGROUND_COLLISION) & (1 << spriteNr);
+uint8_t getSpriteSpriteCollisions() {
+    return *ADDRESS_TO_PTR(SPRITES_SPRITE_COLLISION);
+}
+
+uint8_t getSpriteBackgroundCollisions() {
+    return *ADDRESS_TO_PTR(SPRITES_BACKGROUND_COLLISION);
+}
+
+void fillBitmapTile(volatile unsigned char* bitmapPointer, struct Vector2uis gridPosition, uint8_t fillend) {
+    volatile unsigned char* gridCell = ADDRESS_TO_PTR(bitmapPointer + gridPosition.y * TEXT_SCREEN_COLUMNS * BYTES_PER_CHAR_BITMAP + gridPosition.x * BYTES_PER_CHAR_BITMAP);
+    for(uint8_t currentByte = 0; currentByte < BYTES_PER_CHAR_BITMAP; currentByte++) {
+        gridCell[currentByte] = fillend;
+    }
+}
+
+void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridPosition) {
+    const uint16_t gridIndex = gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x;
+    for(uint16_t currentRow = 0; currentRow < BYTES_PER_CHAR_BITMAP; currentRow++) {
+        bitmapPointer[gridIndex * BYTES_PER_CHAR_BITMAP + currentRow] = tile.bitmapData[currentRow];
+    }
+     screenRamPointer[gridIndex] = tile.colors;
+}
+
+uint8_t getHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition) {
+    return screenRamPointer[gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x];
+}
+
+void setHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t colors) {
+    screenRamPointer[gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x] = colors;
+}
+
+uint8_t getBackgroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition) {
+    uint8_t colors = screenRamPointer[gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x] = colors;
+    return colors & 0x0f;
+}
+
+void setBackgroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition, uint8_t primeryColor) {
+    volatile unsigned char* gridCell = ADDRESS_TO_PTR(screenRamPointer+gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x);
+    uint8_t colors = *gridCell;
+    colors &= 0x0f;
+    colors |= primeryColor << BITS_PER_NIBBLE;
+    *gridCell = colors;
+}
+
+uint8_t getForegroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition) {
+    uint8_t colors = screenRamPointer[gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x] = colors;
+    return (colors & 0xf0) >> BITS_PER_NIBBLE;
+}
+
+void setForegroundColorOfHighResBitmapTile(volatile unsigned char *screenRamPointer, const struct Vector2uis gridPosition, uint8_t secondaryColor) {
+    volatile unsigned char* gridCell = ADDRESS_TO_PTR(screenRamPointer+gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x);
+    uint8_t colors = *gridCell;
+    colors &= 0xf0;
+    colors |= secondaryColor;
+    *gridCell = colors;
 }
 
 void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Rectangle2ui rectangle, const uint8_t foregroundColor, const uint8_t backgroundColor) {
@@ -180,22 +240,6 @@ void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointe
              screenRamPointer[currentRow * TEXT_SCREEN_COLUMNS + currentColumn] = (foregroundColor << BITS_PER_NIBBLE) | backgroundColor;
         }
     }
-}
-
-void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell) {
-    const uint16_t gridIndex = gridCell.y * TEXT_SCREEN_COLUMNS + gridCell.x;
-    for(uint16_t currentRow = 0; currentRow < BYTES_PER_CHAR_BITMAP; currentRow++) {
-        bitmapPointer[gridIndex * BYTES_PER_CHAR_BITMAP + currentRow] = tile.bitmapData[currentRow];
-    }
-     screenRamPointer[gridIndex] = tile.colors;
-}
-
-void setBorderColor(uint8_t color) {
-    *ADDRESS_TO_PTR(VIC_BORDER_COLOR) = color;
-}
-
-void setBackgroundColor(uint8_t color) {
-    *ADDRESS_TO_PTR(VIC_BACKGROUND_COLOR) = color;
 }
 
 void switchToHighResBitmapMode() {
@@ -215,4 +259,12 @@ void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct V
 void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position) {
     struct MemoryPosition pixelPosition = bitmapPositionToMemoryPosition(position);
     *ADDRESS_TO_PTR(bitmapPointer + pixelPosition.byte) &= ~(1 << pixelPosition.bit);
+}
+
+void setBorderColor(uint8_t color) {
+    *ADDRESS_TO_PTR(VIC_BORDER_COLOR) = color;
+}
+
+void setBackgroundColor(uint8_t color) {
+    *ADDRESS_TO_PTR(VIC_BACKGROUND_COLOR) = color;
 }

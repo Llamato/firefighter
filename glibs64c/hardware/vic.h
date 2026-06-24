@@ -4,8 +4,11 @@
     #define VIC_H
 
     //Memory mappings
+    #define VIC_BANK_SELECT         0xDD00
     #define VIC_BORDER_COLOR		0xD020
     #define VIC_BACKGROUND_COLOR 	0xD021
+    #define VIC_SPRITES_MULTICOLOR_PRIMERY 0xD025
+    #define VIC_SPRITES_MULTICOLOR_SECONDARY 0xD026
     #define SCREEN_RAM      		0x0400
     #define SCREEN_COLOR_RAM		0xD800
     #define BITMAP_RAM              0x2000
@@ -60,6 +63,8 @@
     #define SPRITE_SCREEN_UPPER_LIMIT 1
     #define BITMAP_SPRITE_X_OFFSET 24
     #define BITMAP_SPRITE_Y_OFFSET 50
+    #define SPRITE_X_MAX BITMAP_WIDTH+BITMAP_SPRITE_X_OFFSET
+    #define SPRITE_Y_MAX BITMAP_HEIGHT+BITMAP_SPRITE_Y_OFFSET
     #define SPRITE_SCREEN_RIGHT_LIMIT BITMAP_WIDTH + BITMAP_SPRITE_X_OFFSET
     #define SPRITE_SCREEN_LOWER_LIMIT BITMAP_HEIGHT + BITMAP_SPRITE_Y_OFFSET
     #define HARDWARE_SPRITE_COUNT 8
@@ -143,8 +148,10 @@
     struct MemoryPosition bitmapPositionToMemoryPosition(const struct Vector2ui rasterPosition);
     struct Vector2ui bitmapPositionToSpritePosition(struct Vector2ui bitmapPosition);
     struct Vector2ui charGridPositionToSpritePosition(struct Vector2uis gridPosition);
+    struct Vector2uis spritePositionToCharGridPosition(struct Vector2ui spritePosition);
     struct Vector2ui charGridPositionToBitmapPosition(const struct Vector2uis gridPosition);
-    void setSharedMulticolorSpriteColors(const uint8_t primery, const uint8_t secondary);
+    void setSharedMulticolorSpritesPrimeryColor(const uint8_t primery);
+    void setSharedMulticolorSpritesSecondaryColor(const uint8_t secondary);
     void setSpriteColor(const uint8_t spriteNr, uint8_t color);
     void enableSprite(const uint8_t spriteNr);
     void disableSprite(const uint8_t spriteNr);
@@ -167,13 +174,20 @@
     void setSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void clearSpritePixel(volatile unsigned char* bitmapPointer, const struct Vector2uis position);
     void applySpriteTemplate(const uint8_t spriteNr, const uint8_t bitmapBlock, const struct SpriteTemplate* spriteTemplate);
-    bool isSpriteCollidingWithBackground(const uint8_t spriteNr);
-    void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Rectangle2ui rectangle, const uint8_t foregroundColor, const uint8_t backgroundColor);
+    uint8_t getSpriteSpriteCollisions();
+    uint8_t getSpriteBackgroundCollisions();
+    void fillBitmapTile(volatile unsigned char* bitmapPointer, struct Vector2uis gridPosition, uint8_t fillend);
     void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell);
+    uint8_t getHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition);
+    void setHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t colors);
+    uint8_t getBackgroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition);
+    void setBackgroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t primeryColor);
+    uint8_t getForegroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition);
+    void setForegroundColorOfHighResBitmapTile(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t secondaryColor);
+    void colorRectangularHighResBitmapRegion(volatile unsigned char* screenRamPointer, const struct Rectangle2ui rectangle, const uint8_t foregroundColor, const uint8_t backgroundColor);
     void switchToHighResBitmapMode();
     void setHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
     void clearHighResBitmapPixel(volatile unsigned char* bitmapPointer, const struct Vector2ui position);
-    void copyTile(volatile unsigned char* to, volatile unsigned char* from);
     void setBorderColor(const uint8_t color);
     void setBackgroundColor(const uint8_t color);
     
