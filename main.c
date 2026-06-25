@@ -151,7 +151,7 @@ static struct HighResBitmapMultiTile house = {
 };
 
 static struct Vector2uis flameTargets[] = {
-    //Grass
+    //Grass positions
     {13, 1},
     {17, 1},
     {20, 1},
@@ -557,7 +557,9 @@ int main(void) {
 
                 //Avoid duplicate targets
                 uint8_t duplicateCheck[FLAME_SPRITE_COUNT];
+                uint8_t rollCount = 0; 
                 reroll:
+                rollCount++;
                 for(uint8_t currentEntry = 0; currentEntry < FLAME_SPRITE_COUNT; currentEntry++) {
                     duplicateCheck[currentEntry] = 0;
                 }
@@ -573,12 +575,14 @@ int main(void) {
                         }
                     }
                 }
-                for(uint8_t currentEntry = 0; currentEntry < FLAME_SPRITE_COUNT; currentEntry++) {
-                    if(duplicateCheck[currentEntry] > 1){
-                        goto reroll;
+                if(rollCount < 10) { 
+                    for(uint8_t currentEntry = 0; currentEntry < FLAME_SPRITE_COUNT; currentEntry++) {
+                        if(duplicateCheck[currentEntry] > 1){
+                            goto reroll;
+                        }
                     }
                 }
-
+                
                 setSpriteColor(currentSprite, PRIMERY_FLAME_COLOR);
                 respawnFlame(currentFlame);
             }
