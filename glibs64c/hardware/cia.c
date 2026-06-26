@@ -54,7 +54,7 @@ uint8_t readKeyboardState() {
     }
     done:
     *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRA_OFFSET) = oldDDRA;
-    *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRA_OFFSET) = oldDDRB;
+    *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRA_OFFSET) = oldDDRB; //Not sure why restoring ddrb to ddra here fixes the movement issue but it does and I got other things to do, so I am leaving it for now.
     return pressedKey;
 }
 
