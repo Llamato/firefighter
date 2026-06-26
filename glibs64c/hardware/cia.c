@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "../common.h"
 #include "../gllm/gllm.h"
+#include "vic.h"
 #include "cia.h"
 
 uint8_t readJoystick1State() {
@@ -12,11 +13,11 @@ uint8_t readJoystick2State() {
 }
 
 struct Vector2is getMovementVectorFromJoystickState(uint8_t joystickState) {
-    const bool joystickUpPressed = (joystickState & JOYSTICK_UP_MASK) == JOYSTICK_KEY_IS_DOWN;
-    const bool joystickDownPressed = (joystickState & JOYSTICK_DOWN_MASK) == JOYSTICK_KEY_IS_DOWN;
-    const bool joystickLeftPressed = (joystickState & JOYSTICK_LEFT_MASK) == JOYSTICK_KEY_IS_DOWN;
-    const bool joystickRightPressed = (joystickState & JOYSTICK_RIGHT_MASK) == JOYSTICK_KEY_IS_DOWN;
-    const struct Vector2is movementVector = {joystickRightPressed - joystickLeftPressed,joystickDownPressed - joystickUpPressed};
+    const bool upPressed = (joystickState & JOYSTICK_UP_MASK) == JOYSTICK_KEY_IS_DOWN;
+    const bool downPressed = (joystickState & JOYSTICK_DOWN_MASK) == JOYSTICK_KEY_IS_DOWN;
+    const bool leftPressed = (joystickState & JOYSTICK_LEFT_MASK) == JOYSTICK_KEY_IS_DOWN;
+    const bool rightPressed = (joystickState & JOYSTICK_RIGHT_MASK) == JOYSTICK_KEY_IS_DOWN;
+    const struct Vector2is movementVector = {rightPressed - leftPressed,downPressed - upPressed};
     return movementVector;
 }
 
@@ -25,7 +26,46 @@ bool isJoystickFirePressed(uint8_t joystickState){
     return joystickFirePressed;
 }
 
-//Potential optimisations: remove multiplications and if need be all pointer arithmetic
+uint8_t readKeyboardState() {
+    uint8_t oldDDRA = *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRA_OFFSET);
+    uint8_t oldDDRB = *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRB_OFFSET);
+    *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRA_OFFSET) = 0xff;
+    *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRB_OFFSET) = 0x00;
+    uint8_t currentRow = 0;
+    uint8_t rowMask = 1;
+    uint8_t pressedKey = 0;
+    while(rowMask) {
+        *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+PORTA_OFFSET) = ~rowMask;
+        uint8_t rowBytes = ~*ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+PORTB_OFFSET);
+        if(rowBytes) {
+            uint8_t currentColumn = 0;
+            uint8_t columnMask = 1;
+            while(columnMask) {
+                if(rowBytes & columnMask) {
+                    pressedKey = currentRow * BITS_PER_BYTE + currentColumn;
+                    goto done;
+                }
+                currentColumn++;
+                columnMask = columnMask << 1;
+            }
+        }
+        currentRow++;
+        rowMask = rowMask << 1;
+    }
+    done:
+    *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRA_OFFSET) = oldDDRA;
+    *ADDRESS_TO_PTR(CIA1_BASE_ADDRESS+DDRA_OFFSET) = oldDDRB;
+    return pressedKey;
+}
+
+struct Vector2is getMovementVectorFromKeyboardState(uint8_t keyboardState) {
+    const bool upPressed = keyboardState == KEYBOARD_W_PRESSED;
+    const bool downPressed = keyboardState == KEYBOARD_S_PRESSED;
+    const bool leftPressed = keyboardState == KEYBOARD_A_PRESSED;
+    const bool rightPressed = keyboardState == KEYBOARD_D_PRESSED;
+    const struct Vector2is movementVector = {rightPressed - leftPressed,downPressed - upPressed};
+    return movementVector;
+}
 
 uint16_t getCurrentTimerValue(volatile unsigned char* ciaBase, uint8_t timer) {
     return *ADDRESS_TO_PTR(ciaBase + TIMERA_LOW_BYTE_OFFSET + timer * 4);

@@ -430,13 +430,6 @@ void enlargeFlame(uint8_t flameNr) {
     enableSpriteDoubleWidth(spriteNr);
 }
 
-struct Vector2ui computeNextPlayerPosition(uint8_t joystickState) {
-    const struct Vector2is movementVector = getMovementVectorFromJoystickState(joystickState);
-    struct Vector2ui nextPosition = {playerSprite.position.x + movementVector.x, playerSprite.position.y + movementVector.y};
-    nextPosition = clampSpritePositionToScreen(nextPosition);
-    return nextPosition;
-}
-
 bool isOnLakeShore(struct Vector2ui position) {
     const int16_t dxTL = position.x - lakeBoundingBox.topLeftCorner.x;
     const int16_t dyTL = position.y - lakeBoundingBox.topLeftCorner.y;
@@ -582,7 +575,7 @@ int main(void) {
                         }
                     }
                 }
-                
+
                 setSpriteColor(currentSprite, PRIMERY_FLAME_COLOR);
                 respawnFlame(currentFlame);
             }
@@ -591,7 +584,12 @@ int main(void) {
         
         //Player
         const uint8_t joystickState = readJoystick1State() & readJoystick2State();
-        const struct Vector2ui nextPlayerPositionCandidate = computeNextPlayerPosition(joystickState);
+        const uint8_t keyboardState = readKeyboardState();
+        const struct Vector2is joystickMovementVector = getMovementVectorFromJoystickState(joystickState);
+        const struct Vector2is keyboardMovementVector = getMovementVectorFromKeyboardState(keyboardState);
+        const struct Vector2is combinedMovementVector = {joystickMovementVector.x + keyboardMovementVector.x, joystickMovementVector.y + keyboardMovementVector.y};
+        struct Vector2ui nextPlayerPositionCandidate = {playerSprite.position.x + combinedMovementVector.x, playerSprite.position.y + combinedMovementVector.y};
+        nextPlayerPositionCandidate = clampSpritePositionToScreen(nextPlayerPositionCandidate);
         if(!isOnLake(nextPlayerPositionCandidate)) {
             playerSprite.position = nextPlayerPositionCandidate;
         }
