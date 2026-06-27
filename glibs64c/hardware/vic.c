@@ -190,9 +190,9 @@ void fillBitmapTile(volatile unsigned char* bitmapPointer, struct Vector2uis gri
     }
 }
 
-void copyBitmapTile(volatile unsigned char* tilesetStart, const struct Vector2uis sourcePosition, const struct Vector2uis destinationPosition) {
-    volatile unsigned char* sourcePointer = tilesetStart + sourcePosition.y * TEXT_SCREEN_COLUMNS + sourcePosition.x;
-    volatile unsigned char* destinationPointer = tilesetStart + destinationPosition.y * TEXT_SCREEN_COLUMNS + destinationPosition.x;
+void copyBitmapTile(volatile unsigned char* tilesetStart, const uint16_t sourceOffset, const uint16_t destinationOffset) {
+    volatile unsigned char* sourcePointer = tilesetStart + sourceOffset;
+    volatile unsigned char* destinationPointer = tilesetStart + destinationOffset;
     copyMemory(destinationPointer, sourcePointer, BYTES_PER_CHAR_BITMAP);
 }
 

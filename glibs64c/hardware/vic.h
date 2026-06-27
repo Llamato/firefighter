@@ -177,7 +177,7 @@
     uint8_t getSpriteSpriteCollisions();
     uint8_t getSpriteBackgroundCollisions();
     void fillBitmapTile(volatile unsigned char* bitmapPointer, struct Vector2uis gridPosition, uint8_t fillend);
-    void copyBitmapTile(volatile unsigned char* tilesetStart, const struct Vector2uis sourcePosition, const struct Vector2uis destinationPosition);
+    void copyBitmapTile(volatile unsigned char* tilesetStart, const uint16_t sourceOffset, const uint16_t destinationOffset)
     void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridCell);
     uint8_t getHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition);
     void setHighResBitmapTileColors(volatile unsigned char* screenRamPointer, const struct Vector2uis gridPosition, uint8_t colors);
