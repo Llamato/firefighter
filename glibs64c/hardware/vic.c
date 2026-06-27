@@ -190,6 +190,12 @@ void fillBitmapTile(volatile unsigned char* bitmapPointer, struct Vector2uis gri
     }
 }
 
+void copyBitmapTile(volatile unsigned char* tilesetStart, const struct Vector2uis sourcePosition, const struct Vector2uis destinationPosition) {
+    volatile unsigned char* sourcePointer = tilesetStart + sourcePosition.y * TEXT_SCREEN_COLUMNS + sourcePosition.x;
+    volatile unsigned char* destinationPointer = tilesetStart + destinationPosition.y * TEXT_SCREEN_COLUMNS + destinationPosition.x;
+    copyMemory(destinationPointer, sourcePointer, BYTES_PER_CHAR_BITMAP);
+}
+
 void placeHighResBitmapTile(volatile unsigned char* bitmapPointer, volatile unsigned char* screenRamPointer, struct HighResBitmapTile tile, const struct Vector2uis gridPosition) {
     const uint16_t gridIndex = gridPosition.y * TEXT_SCREEN_COLUMNS + gridPosition.x;
     for(uint16_t currentRow = 0; currentRow < BYTES_PER_CHAR_BITMAP; currentRow++) {
