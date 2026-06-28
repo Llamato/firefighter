@@ -102,6 +102,10 @@ const unsigned char lowerHouseTileTemplate[BYTES_PER_CHAR_BITMAP * HOUSE_TILE_WI
     #embed "assets/background.art" clang::offset((5 * TEXT_SCREEN_COLUMNS + 7) * BYTES_PER_CHAR_BITMAP) limit(4 * BYTES_PER_CHAR_BITMAP)
 };
 
+#define ROMANAS_HOUSE_WIDTH 5
+#define ROMANAS_HOUSE_HEIGHT 4
+const unsigned char* romanasHouseTiles[BYTES_PER_CHAR_BITMAP]
+
 const struct HighResBitmapTile grassTiles[] = {
     {
         (volatile unsigned char*)grassTile1Bitmap,

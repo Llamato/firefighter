@@ -1,0 +1,2 @@
+acme -o assets/mysprites.prg assets/mysprites.asm
+mos-c64-clang -Os firefighter.c glibs64c/common.c glibs64c/gllm/gllm.c glibs64c/graphics.c glibs64c/hardware/*.c -Iglibs64c -Iglibs64c/gllm -Iglibs64c/hardware -o firefighter.prg

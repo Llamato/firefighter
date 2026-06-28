@@ -14,8 +14,8 @@
         pkgs = nixpkgs.legacyPackages.${system};
         llvm-mos = pkgs.callPackage (inputs.llamato-dotfiles + "/nixos/packages/llvm-mos/package.nix") { };
       in {
-        default = pkgs.mkShell {
-          packages = with pkgs; [
+        default = pkgs.mkShell.override { stdenv = pkgs.clangStdenv; } {
+          buildInputs = with pkgs; [
             bun
             acme
             llvm-mos

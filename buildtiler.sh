@@ -1,0 +1,1 @@
+clang tiler.c -o tiler
