@@ -104,7 +104,10 @@ const unsigned char lowerHouseTileTemplate[BYTES_PER_CHAR_BITMAP * HOUSE_TILE_WI
 
 #define ROMANAS_HOUSE_WIDTH 5
 #define ROMANAS_HOUSE_HEIGHT 4
-const unsigned char* romanasHouseTiles[BYTES_PER_CHAR_BITMAP]
+#define ROMANAS_HOUSE_SIZE BYTES_PER_CHAR_BITMAP * ROMANAS_HOUSE_WIDTH * ROMANAS_HOUSE_HEIGHT
+/*const unsigned char* romanasHouseTiles[ROMANAS_HOUSE_SIZE] = {
+    #embed "RomanasHouse.bitmap" limit(ROMANAS_HOUSE_SIZE)
+}*/
 
 const struct HighResBitmapTile grassTiles[] = {
     {
