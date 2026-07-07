@@ -18,22 +18,21 @@ struct Parameters {
     pub color_output_file: PathBuf
 }
 impl Parameters {
-    fn process_args<T>(args: &mut Args, index: usize, msg: &str) -> T where T: std::str::FromStr, <T as std::str::FromStr>::Err: Display, {
-        return args.nth(index).unwrap_or_else(|| exit_on_missing_parameter(msg)).parse::<T>()    
-        .map_err(|e| e.to_string())
-    .unwrap()
+    fn process_next_arg<T>(args: &mut Args, msg: &str) -> T where T: std::str::FromStr, <T as std::str::FromStr>::Err: Display, {
+        args.next().unwrap_or_else(|| exit_on_missing_parameter(msg)).parse::<T>()    
+            .map_err(|e| e.to_string())
+        .unwrap()
     }
-
     pub fn new(mut args: Args) -> Self {
-
+        args.next();
         return Self{
-            x: Self::process_args(&mut args, 1, "Provide x coordinate of tile"),
-            y: Self::process_args(&mut args, 2, "Provide y coordinate of tile"),
-            width: Self::process_args(&mut args, 3, "Provide width of tile"),
-            height: Self::process_args(&mut args, 4, "Provide height of tile"),
-            input_file: Self::process_args(&mut args, 5, "Provide input file"),
-            bitmap_output_file: Self::process_args(&mut args, 6, "Provide bitmap output file"),
-            color_output_file: Self::process_args(&mut args, 7, "Provide color output file")
+            x: Self::process_next_arg(&mut args, "Provide x coordinate of tile"),
+            y: Self::process_next_arg(&mut args, "Provide y coordinate of tile"),
+            width: Self::process_next_arg(&mut args, "Provide width of tile"),
+            height: Self::process_next_arg(&mut args, "Provide height of tile"),
+            input_file: Self::process_next_arg(&mut args, "Provide input file"),
+            bitmap_output_file: Self::process_next_arg(&mut args, "Provide bitmap output file"),
+            color_output_file: Self::process_next_arg(&mut args, "Provide color output file")
         };
     }
 }
