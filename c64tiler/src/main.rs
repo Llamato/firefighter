@@ -1,7 +1,9 @@
 use std::fmt::Display;
-use std::path::{Path, PathBuf};
+use std::path::{ PathBuf };
 use std::env::Args;
 static RETURNCODE_PARAMETER_MISSING: i32 = 1;
+static RETURNCODE_FILE_READ_FAIL: i32 = 2;
+static RETURNCODE_FILE_WRITE_FAIL: i32 = 3;
 static SCREEN_WIDTH: u16 = 40;
 static SCREEN_HEIGHT: u16 = 25;
 static BYTES_PER_CELL: u8 = 8;
@@ -23,9 +25,12 @@ impl Parameters {
             .map_err(|e| e.to_string())
         .unwrap()
     }
-    pub fn new(mut args: Args) -> Self {
+}
+impl Default for Parameters {
+    fn default() -> Self {
+        let mut args = std::env::args();
         args.next();
-        return Self{
+        Self{
             x: Self::process_next_arg(&mut args, "Provide x coordinate of tile"),
             y: Self::process_next_arg(&mut args, "Provide y coordinate of tile"),
             width: Self::process_next_arg(&mut args, "Provide width of tile"),
@@ -33,7 +38,7 @@ impl Parameters {
             input_file: Self::process_next_arg(&mut args, "Provide input file"),
             bitmap_output_file: Self::process_next_arg(&mut args, "Provide bitmap output file"),
             color_output_file: Self::process_next_arg(&mut args, "Provide color output file")
-        };
+        }
     }
 }
 
@@ -47,7 +52,7 @@ impl CbmBitmap {
             .chunks_exact(BYTES_PER_CELL as usize)
             .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
         .collect();
-        let color_data: Vec<u8> = buffer[BITMAP_SIZE..COLORMAP_SIZE].to_vec();
+        let color_data: Vec<u8> = buffer[COLORMAP_SIZE..].to_vec();
         return Self{bitmap_data, color_data};
     }
 
@@ -70,6 +75,18 @@ impl CbmBitmap {
             
         return Self { bitmap_data: new_bitmap_data, color_data: new_color_data };
     }
+
+    pub fn write_bitmap_data_file(&self, file_path: PathBuf) {
+        let mut bytes = Vec::with_capacity(self.bitmap_data.len() * BYTES_PER_CELL as usize);
+        for &value in &self.bitmap_data {
+            bytes.extend_from_slice(&value.to_le_bytes());
+        }
+        std::fs::write(file_path, bytes).unwrap_or_else(|e| exit_on_file_write_failure(e));
+    }
+
+    pub fn write_color_data_file(&self, file_path: PathBuf) {
+        std::fs::write(file_path, &self.color_data).unwrap_or_else(|e| exit_on_file_write_failure(e));
+    }
 }
 
 fn exit_on_missing_parameter(msg : &str) -> String {
@@ -77,14 +94,24 @@ fn exit_on_missing_parameter(msg : &str) -> String {
     std::process::exit(RETURNCODE_PARAMETER_MISSING);
 }
 
+fn exit_on_file_read_failure(e : std::io::Error) -> Vec<u8> {
+    eprint!("Reading input file failed with {}", e);
+    std::process::exit(RETURNCODE_FILE_READ_FAIL);
+}
+
+fn exit_on_file_write_failure(e : std::io::Error) -> () {
+    eprintln!("Writing output file failed with {}", e);
+    std::process::exit(RETURNCODE_FILE_WRITE_FAIL);
+}
+
 fn main() {
-    let parameters = Parameters::new(std::env::args());
+    let parameters = Parameters::default();
     let raw_input_data = match std::fs::read(parameters.input_file) {
         Ok(data) => {data[2..].to_vec()}
-        Err(e) => {panic!("Reading input file failed with {}", e)}
+        Err(e) => {exit_on_file_read_failure(e)}
     };
     let full_bitmap = CbmBitmap::new(raw_input_data);
-    
     let tileset = full_bitmap.extract_rectangle(parameters.x, parameters.y, parameters.width, parameters.height);
-    println!("{:?}", tileset.bitmap_data)
+    tileset.write_bitmap_data_file(parameters.bitmap_output_file);
+    tileset.write_color_data_file(parameters.color_output_file);
 }

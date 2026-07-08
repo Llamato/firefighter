@@ -1,5 +1,6 @@
 *.prg
 *.prg.elf
 *.mp4
-tiler
+*.bitmap
+*.color
 c64tiler/target/*
