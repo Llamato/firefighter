@@ -21,23 +21,27 @@
   inputs.flake-utils.lib.eachSystem supportedSystems (system:
     let
         pkgs = import nixpkgs { inherit system; };
-        llvm-mos-sdk = pkgs.callPackage (
-          inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix"
-        ) { };
+        lib = pkgs.lib;
+        src = ./.;
+        treverse = with builtins // lib; dir: concatMap 
+          (filesystemNode: if filesystemNode.value == "regular" then ["${dir}/${filesystemNode.name}"] else treverse "${dir}/${filesystemNode.name}") 
+          (attrsToList (readDir dir));
+        allFiles = treverse src;
+        cFiles = with builtins // lib; filter (file: hasSuffix ".c" file) allFiles;
+        llvm-mos-sdk = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
     in
     {
       packages = rec {
         firefighter = pkgs.stdenv.mkDerivation rec {
+            inherit src;
             name = "firefighter";
             version = "0.0.1";
-            src = ./.;
-            #includes = 
-
+            includes = with builtins // lib; concatStringsSep " " cFiles;
             buildPhase = ''
               runHook preBuild
               mkdir -p $out
               ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o assets/mysprites.prg assets/mysprites.asm
-              ${llvm-mos-sdk}/bin/mos-c64-clang -Os main.c glibs64c/common.c glibs64c/graphics.c glibs64c/gllm/gllm.c glibs64c/hardware/cia.c glibs64c/hardware/disk.c glibs64c/hardware/sid.c glibs64c/hardware/vic.c -o ${name}.prg
+              ${llvm-mos-sdk}/bin/mos-c64-clang -Os ${includes} -o ${name}.prg
               runHook postBuild
             '';
 
@@ -48,13 +52,28 @@
           };
           default = firefighter;
       };
-      devShells = {
-        packages = with pkgs; [
-          acme
-          llvm-mos-sdk
-          vice
-        ];
-      };
+
+      apps.default = let 
+        package = self.packages.${system}.default; 
+      in {
+      type = "app";
+      program = "${pkgs.writeShellScript "run-spacebirds64" ''
+        exec ${pkgs.vice}/bin/x64sc ${package}/${package.name}.prg "$@"
+      ''}";
+    };
+
+      devShells.default = pkgs.mkShell {
+          packages = with pkgs; [
+            acme
+            llvm-mos-sdk
+            vice
+          ];
+
+          shellHook = ''
+            echo "Includes are:"
+            find . -name "*.c" -type f | tr '\n' ' '
+          '';
+        };
     }
   );
 }
