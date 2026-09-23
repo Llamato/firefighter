@@ -20,8 +20,9 @@
 #define SPRITE_GRID_WIDTH 2
 #define SPRITE_GRID_HEIGHT 2
 
-#define HOUSE_TILE_WIDTH 3
-#define HOUSE_TILE_HEIGHT 2
+#define HOUSE_TILE_WIDTH 5
+#define HOUSE_TILE_HEIGHT 4
+#define HOUSE_TILE_SIZE HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT * BYTES_PER_CHAR_BITMAP
 #define HOUSE_UPPER_FOREGROUND_COLOR COLOR_LIGHT_RED
 #define HOUSE_UPPER_BACKGROUND_COLOR COLOR_GREEN
 #define HOUSE_LOWER_FOREGROUND_COLOR COLOR_LIGHT_RED
@@ -44,6 +45,10 @@
 #define PLAYER_SECONDARY_COLOR COLOR_LIGHT_GRAY
 #define BURNED_POSITION_X 0
 #define BURNED_POSITION_Y 0
+
+#define GRASS_COUNT 109
+#define HOUSE_COUNT 4
+#define TARGET_COUNT GRASS_COUNT + HOUSE_COUNT
 
 struct FlameTarget {
     struct Vector2ui position;
@@ -94,14 +99,6 @@ const unsigned char grassTile3Bitmap[BYTES_PER_CHAR_BITMAP] /*__attribute__((ali
     #embed "assets/background.art" TILE_EMBED_PARAMS(2)
 };
 
-const unsigned char upperHouseTileTemplate[BYTES_PER_CHAR_BITMAP * HOUSE_TILE_WIDTH] = {
-    #embed "assets/background.art" clang::offset((4 * TEXT_SCREEN_COLUMNS + 7) * BYTES_PER_CHAR_BITMAP) limit(4 * BYTES_PER_CHAR_BITMAP)
-};
-
-const unsigned char lowerHouseTileTemplate[BYTES_PER_CHAR_BITMAP * HOUSE_TILE_WIDTH] = {
-    #embed "assets/background.art" clang::offset((5 * TEXT_SCREEN_COLUMNS + 7) * BYTES_PER_CHAR_BITMAP) limit(4 * BYTES_PER_CHAR_BITMAP)
-};
-
 const struct HighResBitmapTile grassTiles[] = {
     {
         (volatile unsigned char*)grassTile1Bitmap,
@@ -117,32 +114,19 @@ const struct HighResBitmapTile grassTiles[] = {
     }
 };
 
-const struct HighResBitmapTile houseTiles[] = {
-    {
-        (volatile unsigned char*) upperHouseTileTemplate,
-        (uint8_t)(HOUSE_UPPER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_UPPER_BACKGROUND_COLOR
-    },
-    {
-        (volatile unsigned char*) upperHouseTileTemplate+BYTES_PER_CHAR_BITMAP,
-        (uint8_t)(HOUSE_UPPER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_UPPER_BACKGROUND_COLOR
-    },
-    {
-        (volatile unsigned char*) upperHouseTileTemplate+BYTES_PER_CHAR_BITMAP*2,
-        (uint8_t)(HOUSE_UPPER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_UPPER_BACKGROUND_COLOR
-    },
-    {
-        (volatile unsigned char*) lowerHouseTileTemplate,
-        (uint8_t)(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_OUTSIDE_BACKGROUND_COLOR
-    },
-    {
-        (volatile unsigned char*) lowerHouseTileTemplate+BYTES_PER_CHAR_BITMAP,
-        (uint8_t)(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
-    },
-    {
-        (volatile unsigned char*) lowerHouseTileTemplate+BYTES_PER_CHAR_BITMAP*2,
-        (uint8_t)(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
-    }
+const unsigned char debugCharset[HOUSE_TILE_SIZE] = {
+    #embed "assets/debugcharset.prg" CHARSET_EMBED_PARAMS(2)
 };
+
+unsigned char romanasHouseBitmap[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT * BYTES_PER_CHAR_BITMAP] = {
+    #embed "assets/RomanasHouse.bitmap"
+};
+
+unsigned char romanasHouseColors[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT] = {
+    #embed "assets/RomanasHouse.color" COLOR_EMBED_PARAMS(0)
+};
+
+struct HighResBitmapTile houseTiles[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT]; 
 
 static struct HighResBitmapMultiTile house = {
     (struct HighResBitmapTile*) houseTiles,
@@ -269,9 +253,6 @@ static struct Vector2uis flameTargets[] = {
     {30, 16}
 };
 
-#define GRASS_COUNT 109
-#define HOUSE_COUNT 4
-#define TARGET_COUNT GRASS_COUNT + HOUSE_COUNT
 const struct Vector2uis* grassPositions = &flameTargets[0];
 const struct Vector2uis* housePositions = &flameTargets[GRASS_COUNT];
 
@@ -307,6 +288,17 @@ static struct AnimatedSpriteTemplate flameSpriteTemplates[] = {
         sizeof(flameAnimationFrames) / sizeof(volatile unsigned char*)
     }
 };
+
+void readHighResBitmapMultiTileTemplate(struct HighResBitmapTile* tiles, const unsigned char* templateBitmap, const unsigned char* templateColors, uint8_t width, uint8_t height) {
+    uint16_t tileCount = width * height;
+    for(uint8_t currentTile = 0; currentTile < tileCount; currentTile++) {
+        tiles[currentTile] = (struct HighResBitmapTile) {
+            templateBitmap + currentTile * BYTES_PER_CHAR_BITMAP,
+            //templateColors[currentTile] //(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
+            (HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
+        };
+    }
+}
 
 bool areSpritesIntersecting(struct Vector2ui sprite1position, struct Vector2ui sprite2position) {
     return (sprite1position.x < sprite2position.x + SPRITE_COLUMNS) && (sprite2position.x < sprite1position.x + SPRITE_COLUMNS) && 
@@ -348,15 +340,6 @@ static uint16_t burnedTargetCount = 0;
 static uint8_t previousRng = 0;
 uint16_t findTargetForFlame(const uint8_t flameNr) {
     uint8_t rng = previousRng;
-
-    //This somehow hangs the entire program. Fine... lets not do it then...
-    /*for(uint8_t rngAttempts = 0; rngAttempts < 10; rngAttempts++) {
-        setBorderColor(COLOR_BLACK);
-        rng = getRandomNumber();
-        setBorderColor(GAME_BORDER_COLOR);
-        if(rng != previousRng) break;
-    }*/
-
     rng = getRandomNumber();
     previousRng = rng;
     rng += flameNr;
@@ -378,8 +361,6 @@ bool moveFlame(const uint8_t flameNr) {
     if(targetFlamePosition.x > nextFlamePosition.x) nextFlamePosition.x++;
     if(targetFlamePosition.y < nextFlamePosition.y) nextFlamePosition.y--;
     if(targetFlamePosition.y > nextFlamePosition.y) nextFlamePosition.y++;
-    //if(nextFlamePosition.x > SPRITE_X_MAX) nextFlamePosition.x = SPRITE_X_MAX;
-    //if(nextFlamePosition.x > SPRITE_Y_MAX) nextFlamePosition.y = SPRITE_Y_MAX;
     bool arrived = nextFlamePosition.x == targetFlamePosition.x && nextFlamePosition.y == targetFlamePosition.y;
     setSpritePosition(spriteNr, nextFlamePosition);
     currentFlamePositions[flameNr] = nextFlamePosition;
@@ -495,6 +476,7 @@ int main(void) {
     lakeBoundingBox.topLeftCorner = bitmapPositionToSpritePosition(lakeBoundingBox.topLeftCorner);
     lakeBoundingBox.bottomRightCorner = bitmapPositionToSpritePosition(lakeBoundingBox.bottomRightCorner);
     placeGrass((const struct Vector2uis*) grassPositions, GRASS_COUNT);
+    readHighResBitmapMultiTileTemplate(houseTiles, romanasHouseBitmap, romanasHouseColors, HOUSE_TILE_WIDTH, HOUSE_TILE_HEIGHT);
     placeHouses((const struct Vector2uis*) housePositions, HOUSE_COUNT);
 
     //Init sprites

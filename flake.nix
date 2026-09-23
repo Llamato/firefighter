@@ -6,7 +6,6 @@
     flake-utils.url = "github:numtide/flake-utils";
     dotfiles-llamato = {
       url = "github:llamato/dotfiles";
-      flake = false;
     };
   };
 
@@ -15,7 +14,6 @@
         "x86_64-linux"
         "aarch64-linux"
         "riscv64-linux"
-        "aarch64-darwin"
       ];
   in 
   inputs.flake-utils.lib.eachSystem supportedSystems (system:
@@ -28,7 +26,7 @@
           (attrsToList (readDir dir));
         allFiles = treverse src;
         cFiles = with builtins // lib; filter (file: hasSuffix ".c" file) allFiles;
-        llvm-mos-sdk = pkgs.callPackage (inputs.dotfiles-llamato + "/nixos/packages/llvm-mos-sdk/package.nix") { };
+        llvm-mos-sdk = inputs.dotfiles-llamato.packages.${system}.llvm-mos-sdk;
     in
     {
       packages = rec {
