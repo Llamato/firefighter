@@ -11,22 +11,28 @@
 
   outputs = { self, nixpkgs, ... } @ inputs: let
     supportedSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "riscv64-linux"
-      ];
+      "x86_64-linux"
+      "aarch64-linux"
+      "riscv64-linux"
+    ];
   in 
   inputs.flake-utils.lib.eachSystem supportedSystems (system:
     let
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
-        src = ./.;
-        treverse = with builtins // lib; dir: concatMap 
-          (filesystemNode: if filesystemNode.value == "regular" then ["${dir}/${filesystemNode.name}"] else treverse "${dir}/${filesystemNode.name}") 
-          (attrsToList (readDir dir));
-        allFiles = treverse src;
-        cFiles = with builtins // lib; filter (file: hasSuffix ".c" file) allFiles;
         llvm-mos-sdk = inputs.dotfiles-llamato.packages.${system}.llvm-mos-sdk;
+        src = ./.;
+        treverse = dir: builtins.concatMap 
+          (filesystemNode: if filesystemNode.value == "regular" then ["${dir}/${filesystemNode.name}"] else treverse "${dir}/${filesystemNode.name}") 
+          (lib.attrsToList (builtins.readDir dir));
+        allFiles = treverse src;
+        cFiles = builtins.filter (file: lib.hasSuffix ".c" file) allFiles;
+        mosCincludes = lib.concatStringsSep " " cFiles;
+        cFlags = [
+          "-Os"
+          "-Wl,--section-start=.housedata=0xC000"
+        ];
+        mosCflags = lib.concatStringsSep " " cFlags;
     in
     {
       packages = rec {
@@ -34,12 +40,11 @@
             inherit src;
             name = "firefighter";
             version = "0.0.1";
-            includes = with builtins // lib; concatStringsSep " " cFiles;
             buildPhase = ''
               runHook preBuild
               mkdir -p $out
               ${pkgs.acme}/bin/acme --cpu 6510 --format cbm -o assets/mysprites.prg assets/mysprites.asm
-              ${llvm-mos-sdk}/bin/mos-c64-clang -Os ${includes} -o ${name}.prg
+              ${llvm-mos-sdk}/bin/mos-c64-clang ${mosCincludes} ${mosCflags} -o ${name}.prg
               runHook postBuild
             '';
 

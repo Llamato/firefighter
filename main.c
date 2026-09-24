@@ -47,7 +47,7 @@
 #define BURNED_POSITION_Y 0
 
 #define GRASS_COUNT 109
-#define HOUSE_COUNT 1
+#define HOUSE_COUNT 4
 #define TARGET_COUNT GRASS_COUNT + HOUSE_COUNT
 
 struct FlameTarget {
@@ -55,6 +55,7 @@ struct FlameTarget {
     bool burned;
 };
 
+__attribute__((section(".housedata")))
 unsigned char romanasHouseBitmap[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT * BYTES_PER_CHAR_BITMAP] = {
     #embed "assets/RomanasHouse.bitmap" limit(BITMAP_SIZE)
 };
@@ -243,7 +244,7 @@ static struct Vector2uis flameTargets[] = {
     {29, 25},
 
     //House positions
-    {10, 5},
+    {5, 5},
     {30, 5},
     {10, 20},
     {30, 16}
@@ -290,8 +291,8 @@ void readHighResBitmapMultiTileTemplate(struct HighResBitmapTile* tiles, const u
     for(uint8_t currentTile = 0; currentTile < tileCount; currentTile++) {
         tiles[currentTile] = (struct HighResBitmapTile) {
             templateBitmap + currentTile * BYTES_PER_CHAR_BITMAP,
-            //templateColors[currentTile] //(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
-            (HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
+            templateColors[currentTile] //(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
+            //(HOUSE_LOWER_FOREGROUND_COLOR << BITS_PER_NIBBLE) | HOUSE_LOWER_INSIDE_BACKGROUND_COLOR
         };
     }
 }
