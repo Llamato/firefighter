@@ -47,12 +47,20 @@
 #define BURNED_POSITION_Y 0
 
 #define GRASS_COUNT 109
-#define HOUSE_COUNT 4
+#define HOUSE_COUNT 1
 #define TARGET_COUNT GRASS_COUNT + HOUSE_COUNT
 
 struct FlameTarget {
     struct Vector2ui position;
     bool burned;
+};
+
+unsigned char romanasHouseBitmap[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT * BYTES_PER_CHAR_BITMAP] = {
+    #embed "assets/RomanasHouse.bitmap" limit(BITMAP_SIZE)
+};
+
+unsigned char romanasHouseColors[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT] = {
+    #embed "assets/RomanasHouse.color" COLOR_EMBED_PARAMS(0)
 };
 
 const unsigned char flameSprite1Bitmap[SPRITE_SIZE] /*__attribute__((aligned(SPRITE_SIZE)))*/ = { 
@@ -112,18 +120,6 @@ const struct HighResBitmapTile grassTiles[] = {
         (volatile unsigned char*)grassTile3Bitmap,
         (uint8_t)(COLOR_LIGHT_GREEN << BITS_PER_NIBBLE) | COLOR_GREEN
     }
-};
-
-const unsigned char debugCharset[HOUSE_TILE_SIZE] = {
-    #embed "assets/debugcharset.prg" CHARSET_EMBED_PARAMS(2)
-};
-
-unsigned char romanasHouseBitmap[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT * BYTES_PER_CHAR_BITMAP] = {
-    #embed "assets/RomanasHouse.bitmap"
-};
-
-unsigned char romanasHouseColors[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT] = {
-    #embed "assets/RomanasHouse.color" COLOR_EMBED_PARAMS(0)
 };
 
 struct HighResBitmapTile houseTiles[HOUSE_TILE_WIDTH * HOUSE_TILE_HEIGHT]; 
@@ -470,13 +466,13 @@ int main(void) {
     fillMemory(ADDRESS_TO_PTR(BITMAP_RAM), BITMAP_SIZE, 0);
     
     //Init bitmap
+    readHighResBitmapMultiTileTemplate(houseTiles, romanasHouseBitmap, romanasHouseColors, HOUSE_TILE_WIDTH, HOUSE_TILE_HEIGHT);
     const struct Vector2ui lakeCenter = {BITMAP_WIDTH / 2, BITMAP_HEIGHT / 2};
     const uint8_t lakeRadius = BITMAP_HEIGHT / 4;
     drawLake(lakeCenter, lakeRadius);
     lakeBoundingBox.topLeftCorner = bitmapPositionToSpritePosition(lakeBoundingBox.topLeftCorner);
     lakeBoundingBox.bottomRightCorner = bitmapPositionToSpritePosition(lakeBoundingBox.bottomRightCorner);
     placeGrass((const struct Vector2uis*) grassPositions, GRASS_COUNT);
-    readHighResBitmapMultiTileTemplate(houseTiles, romanasHouseBitmap, romanasHouseColors, HOUSE_TILE_WIDTH, HOUSE_TILE_HEIGHT);
     placeHouses((const struct Vector2uis*) housePositions, HOUSE_COUNT);
 
     //Init sprites
@@ -518,8 +514,6 @@ int main(void) {
                 
             }
             if(isFlameInGame && flameLifetimes[currentFlame] == 0) {
-                //setHighResBitmapTileColors(ADDRESS_TO_PTR(SCREEN_RAM), flameTargets[selectedFlameTargets[currentFlame]], PRIMERY_FLAME_COLOR << BITS_PER_NIBBLE | SECONDARY_FLAME_COLOR);
-                //setBackgroundColorOfHighResBitmapTile(ADDRESS_TO_PTR(SCREEN_RAM), flameTargets[selectedFlameTargets[currentFlame]], SECONDARY_FLAME_COLOR);
                 burnedTargetCount++;
                 const int16_t substituteTargetIndex = sizeof(flameTargets) / sizeof(struct Vector2uis) - burnedTargetCount;
                 if(substituteTargetIndex < 0) {
@@ -607,10 +601,6 @@ int main(void) {
                 }
             }  
         }
-        /*else if(fireButtonIsPressed && !playerIsOnLakeShore) {
-            //Drop water (Bug / inaccuracy in here were water is dropped before flame is extinglished)
-            playerHasWater = false;
-        }*/
         else if(isPlayerInFire && !playerHasWater) {
             playerIsOnFire = true;
         }
